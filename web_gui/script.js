@@ -77,10 +77,15 @@ ssidInput.addEventListener('input', function () {
 });
 
 // Add start listening button handler
+// Add start listening button handler
 const startListenBtn = document.getElementById('startListenBtn');
+let savedChannelId = '';
+
 if (startListenBtn) {
     startListenBtn.addEventListener('click', async () => {
-        const channelId = prompt('Enter Telegram channel/group ID (numeric)');
+        // Use savedChannelId as default value
+        const defaultValue = savedChannelId || '';
+        const channelId = prompt('Enter Telegram channel/group ID (numeric)', defaultValue);
         if (!channelId) return;
         try {
             const resp = await fetch('http://localhost:5000/api/telegram/listen', {
@@ -94,6 +99,8 @@ if (startListenBtn) {
                 // Show live messages area
                 const liveDiv = document.getElementById('liveMessages');
                 if (liveDiv) liveDiv.classList.remove('hidden');
+                // Persist locally in case they changed it
+                savedChannelId = channelId;
                 startMessagePolling(); // Start polling for messages
             } else {
                 showError(data.error || 'Failed to start listening');
@@ -191,6 +198,11 @@ async function updateTelegramStatus() {
     try {
         const resp = await fetch('http://localhost:5000/api/telegram/status');
         const data = await resp.json();
+        
+        if (data.saved_channel_id) {
+            savedChannelId = data.saved_channel_id;
+        }
+
         telegramStatusDiv.textContent = data.logged_in ? 'Logged in to Telegram' : 'Not logged in';
         
         const startBtn = document.getElementById('startListenBtn');

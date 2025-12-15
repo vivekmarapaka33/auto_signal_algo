@@ -235,6 +235,21 @@ def telegram_listen():
         return jsonify({'success': False, 'error': 'Channel ID required'}), 400
     
     try:
+        # Save channel_id to session_data.json
+        if channel_id:
+             try:
+                 session_data = {}
+                 if os.path.exists(SESSION_FILE):
+                     with open(SESSION_FILE, 'r', encoding='utf-8') as f:
+                        try:
+                            session_data = json.load(f)
+                        except: pass
+                 session_data['channel_id'] = channel_id
+                 with open(SESSION_FILE, 'w', encoding='utf-8') as f:
+                     json.dump(session_data, f, indent=2)
+             except Exception as e:
+                 print(f"Error saving channel_id: {e}")
+
         # This just schedules the task in background loop
         telegram_handler.start_channel_listener(channel_id)
         return jsonify({'success': True, 'message': f'Listening to {channel_id}'})
@@ -244,9 +259,18 @@ def telegram_listen():
 @app.route('/api/telegram/status', methods=['GET'])
 def telegram_status():
     """Return telegram login status and session string if available."""
+    saved_channel_id = None
+    try:
+        if os.path.exists(SESSION_FILE):
+            with open(SESSION_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                saved_channel_id = data.get('channel_id')
+    except: pass
+
     status = {
         'logged_in': bool(telegram_handler.session_string),
-        'session_string': telegram_handler.get_session_string()
+        'session_string': telegram_handler.get_session_string(),
+        'saved_channel_id': saved_channel_id
     }
     return jsonify(status)
 
