@@ -50,18 +50,39 @@
                 <button id="telegramLoginBtn" class="btn-primary">Login with Telegram</button>
                 <input type="text" id="telegramCode" placeholder="Enter OTP code" style="display:none;"/>
                 <button id="telegramVerifyBtn" class="btn-primary" style="display:none;">Verify OTP</button>
-                <button id="startListenBtn" class="btn-primary" style="display:none;">Start Listening</button>
+                
+                <div class="input-group" style="margin-top: 15px;">
+                    <label for="channelIdInput">Channel ID</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="channelIdInput" placeholder="-100123456789" />
+                        <button id="startListenBtn" class="btn-primary" style="width: auto;">Start Listening</button>
+                    </div>
+                </div>
             </div>
+            <!-- Signal Status Section -->
+            <div id="signalStatus" class="section">
+                <h2>Signal Status</h2>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <span class="label">Current Asset</span>
+                        <span class="value" id="statusAsset">--</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Timeframe</span>
+                        <span class="value" id="statusTimeframe">--</span>
+                    </div>
+                </div>
+            </div>
+
             <div id="liveMessages" class="section hidden">
                 <h2>Live Telegram Messages</h2>
                 <table class="message-table">
                     <thead>
                         <tr>
                             <th>Time</th>
+                            <th>Message</th>
                             <th>Asset</th>
-                            <th>Dir</th>
-                            <th>Exp</th>
-                            <th>Raw</th>
+                            <th>TF</th>
                         </tr>
                     </thead>
                     <tbody id="messageList"></tbody>
@@ -71,6 +92,7 @@
             <div id="ssidSection" class="section hidden">
                 <h2>Manage SSIDs</h2>
                 <form id="ssidAddForm" class="form">
+                    <input type="hidden" id="editOriginalName" />
                     <div class="input-group">
                         <label for="ssidNameInput">Name</label>
                         <input type="text" id="ssidNameInput" required />
@@ -79,7 +101,20 @@
                         <label for="ssidValueInput">SSID Token</label>
                         <textarea id="ssidValueInput" rows="3" required></textarea>
                     </div>
-                    <button type="submit" class="btn-primary">Save SSID</button>
+                    <div class="row" style="display: flex; gap: 10px;">
+                        <div class="input-group" style="flex: 1;">
+                            <label for="ssidPercentInput">Percentage (%)</label>
+                            <input type="number" id="ssidPercentInput" min="1" max="100" value="10" />
+                        </div>
+                        <div class="input-group" style="flex: 1;">
+                            <label for="ssidFixedInput">Fixed Amount ($)</label>
+                            <input type="number" id="ssidFixedInput" min="1" step="0.01" placeholder="Optional" />
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                         <button type="submit" id="ssidSubmitBtn" class="btn-primary">Save SSID</button>
+                         <button type="button" id="ssidCancelBtn" class="btn-primary" style="background: #666; display: none;">Cancel</button>
+                    </div>
                 </form>
                 <h3>Saved SSIDs</h3>
                 <ul id="ssidList"></ul>

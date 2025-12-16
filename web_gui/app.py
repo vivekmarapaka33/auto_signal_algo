@@ -16,8 +16,16 @@ SESSION_FILE = os.path.join(BASE_DIR, 'session_data.json')
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path='')
 CORS(app)
 
+from telegram_handler import TelegramHandler
+from automation_manager import AutomationManager
+from telegram_signal_trader import TelegramSignalTrader
+
 # Global instances
 telegram_handler = TelegramHandler()
+trader = TelegramSignalTrader()
+# Connect handler to trader
+telegram_handler.on_message_callback = trader.handle_message
+
 automation_manager = AutomationManager(telegram_handler)
 
 def preprocess_ssid(ssid: str) -> str:
@@ -235,22 +243,7 @@ def telegram_listen():
         return jsonify({'success': False, 'error': 'Channel ID required'}), 400
     
     try:
-        # Save channel_id to session_data.json
-        if channel_id:
-             try:
-                 session_data = {}
-                 if os.path.exists(SESSION_FILE):
-                     with open(SESSION_FILE, 'r', encoding='utf-8') as f:
-                        try:
-                            session_data = json.load(f)
-                        except: pass
-                 session_data['channel_id'] = channel_id
-                 with open(SESSION_FILE, 'w', encoding='utf-8') as f:
-                     json.dump(session_data, f, indent=2)
-             except Exception as e:
-                 print(f"Error saving channel_id: {e}")
-
-        # This just schedules the task in background loop
+        # This just schedules the task in background loop and persists session
         telegram_handler.start_channel_listener(channel_id)
         return jsonify({'success': True, 'message': f'Listening to {channel_id}'})
     except Exception as e:
@@ -259,13 +252,8 @@ def telegram_listen():
 @app.route('/api/telegram/status', methods=['GET'])
 def telegram_status():
     """Return telegram login status and session string if available."""
-    saved_channel_id = None
-    try:
-        if os.path.exists(SESSION_FILE):
-            with open(SESSION_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                saved_channel_id = data.get('channel_id')
-    except: pass
+    # Saved channel id can now be retrieved from telegram_handler itself
+    saved_channel_id = telegram_handler.channel_id
 
     status = {
         'logged_in': bool(telegram_handler.session_string),
@@ -275,6 +263,8 @@ def telegram_status():
     return jsonify(status)
 
 
+@app.route('/api/automation/start', methods=['POST'])
+def automation_start():
     """Start a background automation task.
     Expected JSON: {"task": "balance_poll"}
     """
@@ -318,6 +308,11 @@ def telegram_messages():
     msgs = telegram_handler.get_messages()
     return jsonify({'messages': msgs})
 
+@app.route('/api/trader/status', methods=['GET'])
+def trader_status():
+    """Returns current signal trader status."""
+    return jsonify(trader.get_status())
+
 # SSID management helpers
 SSID_FILE = os.path.join(BASE_DIR, 'ssids.json')
 
@@ -330,51 +325,157 @@ def _load_ssids():
         print(f'⚠️ Failed to load SSIDs: {e}')
     return []
 
+async def sync_brokers_from_ssids(ssids):
+    """Rebuild trader brokers list from SSIDs. Runs on background loop."""
+    try:
+        await trader.clear_brokers()
+        print(f"DEBUG: Found {len(ssids)} SSIDs to sync")
+        for i, s in enumerate(ssids):
+            print(f"DEBUG: Processing SSID {i+1}/{len(ssids)}")
+            if 'ssid' in s:
+                print("DEBUG: Preprocessing SSID...")
+                final_ssid = preprocess_ssid(s['ssid'])
+                print(f"DEBUG: Initializing PocketOptionAsync for SSID {i+1}...")
+                
+                # Run blocking init in executor with timeout
+                loop = asyncio.get_running_loop()
+                try:
+                    client = await asyncio.wait_for(
+                        loop.run_in_executor(None, lambda: PocketOptionAsync(final_ssid)),
+                        timeout=12.0
+                    )
+                except asyncio.TimeoutError:
+                    print(f"❌ ERROR: Broker {i+1} initialization Timed Out!")
+                    print("⚠️ Likely cause: Zombie Chrome processes from previous runs.")
+                    print("⚠️ Please run: stop the server, then 'taskkill /F /IM chrome.exe' in terminal.")
+                    continue
+                except Exception as e:
+                    print(f"❌ ERROR: Broker {i+1} initialization failed: {e}")
+                    continue
+                
+                print("DEBUG: Client initialized. Reading settings...")
+                percentage = float(s.get('percentage', 10))
+                fixed_amount = s.get('fixed_amount')
+                if fixed_amount:
+                     fixed_amount = float(fixed_amount)
+                
+                print(f"DEBUG: Adding broker (pct={percentage}, fixed={fixed_amount})...")
+                trader.add_broker(client, percentage=percentage, fixed_amount=fixed_amount)
+                print("DEBUG: Broker added.")
+        print(f"✅ Initialized trader with {len(trader.brokers)} brokers")
+    except Exception as e:
+        print(f"⚠️ Failed to sync brokers: {e}")
+
 def _save_ssids(ssids):
     try:
         with open(SSID_FILE, 'w', encoding='utf-8') as f:
             json.dump(ssids, f, indent=2)
+        # Reschedule sync on the loop
+        asyncio.run_coroutine_threadsafe(sync_brokers_from_ssids(ssids), telegram_handler.loop)
     except Exception as e:
         print(f'⚠️ Failed to save SSIDs: {e}')
+
+import threading
+import subprocess
+
+@app.route('/api/ssid/list', methods=['GET'])
+def ssid_list():
+    ssids = _load_ssids()
+    return jsonify({'ssids': ssids})
 
 @app.route('/api/ssid/add', methods=['POST'])
 def ssid_add():
     data = request.get_json()
     name = data.get('name')
     ssid = data.get('ssid')
+    percentage = data.get('percentage', 10)
+    fixed_amount = data.get('fixed_amount')
+    
     if not name or not ssid:
         return jsonify({'success': False, 'error': 'Name and SSID required'}), 400
-    
+        
     ssids = _load_ssids()
-    # Check for existing name
-    existing = next((s for s in ssids if s['name'] == name), None)
-    if existing:
-        existing['ssid'] = ssid
-        message = 'SSID updated'
-    else:
-        ssids.append({'name': name, 'ssid': ssid})
-        message = 'SSID added'
+    
+    # Update if exists, else add
+    found = False
+    for s in ssids:
+        if s['name'] == name:
+            s['ssid'] = ssid
+            s['percentage'] = percentage
+            s['fixed_amount'] = fixed_amount
+            found = True
+            break
+    
+    if not found:
+        ssids.append({
+            'name': name,
+            'ssid': ssid,
+            'percentage': percentage,
+            'fixed_amount': fixed_amount
+        })
         
     _save_ssids(ssids)
-    return jsonify({'success': True, 'message': message})
-
-@app.route('/api/ssid/list', methods=['GET'])
-def ssid_list():
-    return jsonify({'ssids': _load_ssids()})
+    return jsonify({'success': True})
 
 @app.route('/api/ssid/delete', methods=['POST'])
 def ssid_delete():
     data = request.get_json()
     name = data.get('name')
     if not name:
-        return jsonify({'success': False, 'error': 'Name required'}), 400
+         return jsonify({'success': False, 'error': 'Name required'}), 400
+         
     ssids = _load_ssids()
-    ssids = [s for s in ssids if s.get('name') != name]
+    ssids = [s for s in ssids if s['name'] != name]
     _save_ssids(ssids)
-    return jsonify({'success': True, 'message': 'SSID deleted'})
+    return jsonify({'success': True})
+
+@app.route('/api/ssid/balance', methods=['POST'])
+def ssid_balance():
+    data = request.get_json()
+    name = data.get('name')
+    if not name:
+        return jsonify({'success': False, 'error': 'Name required'}), 400
+        
+    ssids = _load_ssids()
+    target = next((s for s in ssids if s['name'] == name), None)
+    
+    if not target:
+        return jsonify({'success': False, 'error': 'SSID not found'}), 404
+        
+    try:
+        processed_ssid = preprocess_ssid(target['ssid'])
+        balance = asyncio.run(fetch_balance(processed_ssid))
+        
+        # Update last balance in file
+        target['last_balance'] = balance
+        _save_ssids(ssids)
+        
+        return jsonify({'success': True, 'balance': balance})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+def kill_zombie_chrome():
+    """Force kill stuck chrome processes from previous runs."""
+    try:
+        print("🧹 Cleaning up zombie Chrome processes...")
+        # Redirect output to DEVNULL to avoid clutter
+        subprocess.run(["taskkill", "/F", "/IM", "chrome.exe"], 
+                       stdout=subprocess.DEVNULL, 
+                       stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+# Initialize brokers on startup with a delay to let Flask start
+def delayed_startup():
+    kill_zombie_chrome()
+    print("⏳ Waiting 5s before syncing brokers to allow Server startup...")
+    asyncio.run_coroutine_threadsafe(sync_brokers_from_ssids(_load_ssids()), telegram_handler.loop)
 
 if __name__ == '__main__':
     print("🚀 Starting PocketOption Web GUI...")
+    # Schedule the sync slightly later so it doesn't block app.run from capturing stdout/port immediately
+    threading.Timer(5.0, delayed_startup).start()
+    
     print("📡 Server running at: http://localhost:5000")
     print("Press Ctrl+C to stop the server")
     app.run(debug=True, port=5000, host='0.0.0.0')

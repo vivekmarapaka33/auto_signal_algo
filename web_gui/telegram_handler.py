@@ -23,6 +23,7 @@ class TelegramHandler:
         self.session_string = None
         self.messages = []
         self.phone_code_hash = None
+        self.channel_id = None
         
         # Start a dedicated event loop in a separate thread
         self.loop = asyncio.new_event_loop()
@@ -31,15 +32,27 @@ class TelegramHandler:
         
         # Load persisted session string if available
         self._load_persisted_session()
+        
+        # Auto-start listener if channel_id exists
+        if self.session_string and self.channel_id:
+             self.start_channel_listener(self.channel_id)
 
-    def _run_loop(self):
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
-
-    def _run_coro(self, coro):
-        """Helper to submit a coroutine to the background loop and wait for result."""
-        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
-        return future.result()
+    def _persist_session(self):
+        try:
+            import json, os
+            session_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'session_data.json')
+            data = {}
+            if os.path.exists(session_file):
+                with open(session_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+            data['telegram_session'] = self.session_string
+            if self.channel_id:
+                data['channel_id'] = self.channel_id
+            with open(session_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+            print('✅ Telegram session persisted to file')
+        except Exception as e:
+            print(f'⚠️ Failed to persist Telegram session: {e}')
 
     def _load_persisted_session(self):
         """Load Telegram session string from session_data.json if it exists."""
@@ -50,10 +63,29 @@ class TelegramHandler:
                 with open(session_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     self.session_string = data.get('telegram_session')
+                    self.channel_id = data.get('channel_id')
                     if self.session_string:
                         print('✅ Loaded persisted Telegram session')
+                    if self.channel_id:
+                        print(f'✅ Loaded persisted Channel ID: {self.channel_id}')
         except Exception as e:
             print(f'⚠️ Failed to load persisted Telegram session: {e}')
+
+    def start_channel_listener(self, channel_id: int):
+        """Start listening to a Telegram channel (non-blocking, runs in background)."""
+        self.channel_id = channel_id
+        # We don't wait for this to finish (it runs forever), just schedule it
+        asyncio.run_coroutine_threadsafe(self._listener_coro(channel_id), self.loop)
+        self._persist_session()
+
+    def _run_loop(self):
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
+
+    def _run_coro(self, coro):
+        """Helper to submit a coroutine to the background loop and wait for result."""
+        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
+        return future.result()
 
     async def _init_client(self):
         if not self.client:
@@ -151,29 +183,59 @@ class TelegramHandler:
             signal['asset'] = asset_match.group(1).replace('/', '').upper()
         return signal
 
-    def start_channel_listener(self, channel_id: int):
-        """Start listening to a Telegram channel (non-blocking, runs in background)."""
-        # We don't wait for this to finish (it runs forever), just schedule it
-        asyncio.run_coroutine_threadsafe(self._listener_coro(channel_id), self.loop)
-
     async def _listener_coro(self, channel_id: int):
         if not self.client:
             await self._init_client()
-        @self.client.on(events.NewMessage(chats=channel_id))
-        async def handler(event):
-            msg_text = event.message.message
-            parsed = self.parse_message(msg_text)
-            parsed['date'] = str(event.message.date)
-            parsed['channel_id'] = channel_id
-            self.messages.append(parsed)
-            # Verbose logging for user analysis
-            print(f"\n{'='*20} NEW MESSAGE {'='*20}")
-            print(f"CHANNEL: {channel_id}")
-            print(f"RAW TEXT:\n{msg_text}")
-            print(f"PARSED DATA: {parsed}")
-            print(f"{'='*53}\n")
-        print(f'🔔 Listening to channel {channel_id} for new messages')
-        await self.client.run_until_disconnected()
+            
+        try:
+            # Try to verify access first
+            print(f"🔍 Verifying access to channel {channel_id}...")
+            try:
+                entity = await self.client.get_entity(channel_id)
+                print(f"✅ Verified access to: {getattr(entity, 'title', channel_id)}")
+            except Exception as e:
+                print(f"⚠️ Could not verify channel access: {e}")
+                print("⏳ Waiting for channel to become available or ID update...")
+                return
+
+            # Callback for new messages
+            # self.on_message_callback = None # Do NOT clear this, as it's set by app.py
+
+            @self.client.on(events.NewMessage(chats=channel_id))
+            async def handler(event):
+                msg_text = event.message.message
+                parsed = self.parse_message(msg_text)
+                parsed['date'] = str(event.message.date)
+                parsed['channel_id'] = channel_id
+                self.messages.append(parsed)
+                print(f"\n{'='*20} NEW MESSAGE {'='*20}")
+                print(f"CHANNEL: {channel_id}")
+                print(f"RAW TEXT:\n{msg_text}")
+                print(f"PARSED DATA: {parsed}")
+                print(f"{'='*53}\n")
+                
+                if hasattr(self, 'on_message_callback') and self.on_message_callback:
+                    try:
+                        if asyncio.iscoroutinefunction(self.on_message_callback):
+                            await self.on_message_callback(msg_text)
+                        else:
+                            self.on_message_callback(msg_text)
+                    except Exception as e:
+                        print(f"⚠️ Error in message callback: {e}")
+                        
+            print(f'🔔 Listening to channel {channel_id} for new messages')
+            await self.client.run_until_disconnected()
+
+        except Exception as e:
+            print(f"❌ Critical error in listener loop: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def start_channel_listener(self, channel_id: int):
+        """Start listening to a Telegram channel (non-blocking, runs in background)."""
+        self.channel_id = channel_id
+        asyncio.run_coroutine_threadsafe(self._listener_coro(channel_id), self.loop)
+        self._persist_session()
 
     def send_message(self, chat_id: int, text: str):
         """Send a message (blocking wait)."""
@@ -189,18 +251,3 @@ class TelegramHandler:
 
     def get_messages(self):
         return self.messages
-
-    def _persist_session(self):
-        try:
-            import json, os
-            session_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'session_data.json')
-            data = {}
-            if os.path.exists(session_file):
-                with open(session_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-            data['telegram_session'] = self.session_string
-            with open(session_file, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2)
-            print('✅ Telegram session persisted to file')
-        except Exception as e:
-            print(f'⚠️ Failed to persist Telegram session: {e}')

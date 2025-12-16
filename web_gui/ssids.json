@@ -1,6 +1,8 @@
 [
   {
     "name": "vivek_0",
-    "ssid": "42[\"auth\",{\"session\":\"di4bbrnrf9jac1vtn3ejifiaf4\",\"isDemo\":1,\"uid\":118330943,\"platform\":2,\"isFastHistory\":true,\"isOptimized\":true}]"
+    "ssid": "42[\"auth\",{\"session\":\"di4bbrnrf9jac1vtn3ejifiaf4\",\"isDemo\":1,\"uid\":118330943,\"platform\":2,\"isFastHistory\":true,\"isOptimized\":true}]",
+    "percentage": 10,
+    "fixed_amount": null
   }
 ]
