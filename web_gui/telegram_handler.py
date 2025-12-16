@@ -25,6 +25,10 @@ class TelegramHandler:
         self.phone_code_hash = None
         self.channel_id = None
         
+        # Deduplication
+        self.processed_message_ids = set()
+        self._current_event_handler = None
+        
         # Start a dedicated event loop in a separate thread
         self.loop = asyncio.new_event_loop()
         self.thread = threading.Thread(target=self._run_loop, daemon=True)
@@ -199,10 +203,23 @@ class TelegramHandler:
                 return
 
             # Callback for new messages
-            # self.on_message_callback = None # Do NOT clear this, as it's set by app.py
+            
+            # Remove existing handler if any to prevent duplicates
+            if self._current_event_handler:
+                self.client.remove_event_handler(self._current_event_handler)
+                print("♻️ Removed previous event handler")
 
             @self.client.on(events.NewMessage(chats=channel_id))
             async def handler(event):
+                # Deduplication by ID
+                if event.message.id in self.processed_message_ids:
+                    return
+                # Track ID
+                self.processed_message_ids.add(event.message.id)
+                # Cleanup if too big
+                if len(self.processed_message_ids) > 5000:
+                    self.processed_message_ids.clear()
+
                 msg_text = event.message.message
                 parsed = self.parse_message(msg_text)
                 parsed['date'] = str(event.message.date)
@@ -222,7 +239,8 @@ class TelegramHandler:
                             self.on_message_callback(msg_text)
                     except Exception as e:
                         print(f"⚠️ Error in message callback: {e}")
-                        
+            
+            self._current_event_handler = handler
             print(f'🔔 Listening to channel {channel_id} for new messages')
             await self.client.run_until_disconnected()
 
