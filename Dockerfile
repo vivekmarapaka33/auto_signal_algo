@@ -1,24 +1,38 @@
-# Use Windows Server Core with Python (LTSC 2022 is generally compatible with modern Windows 10/11 hosts)
-FROM python:3.10-windowsservercore-ltsc2022
+# escape=`
 
-# Set PowerShell as default shell
-SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+
+# Use PowerShell
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 `
+    PYTHONUNBUFFERED=1 `
+    TELEGRAM_ALERT_CHAT_ID=0
+
+# Install Python 3.10
+RUN Invoke-WebRequest https://www.python.org/ftp/python/3.10.11/python-3.10.11-amd64.exe -OutFile python.exe ; `
+    Start-Process python.exe -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1' -Wait ; `
+    Remove-Item python.exe
+
+# Upgrade pip
+RUN python -m pip install --upgrade pip
 
 # Set working directory
-WORKDIR /app
+WORKDIR C:/app
 
-# Copy requirements file
+# Copy requirements and install
 COPY requirements.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
+# Copy app code
 COPY . .
 
-# Expose port
+# Move into web_gui
+WORKDIR C:/app/web_gui
+
+# Expose Flask port
 EXPOSE 5000
 
-# Run the application
-WORKDIR /app/web_gui
+# Run app
 CMD ["python", "app.py"]
