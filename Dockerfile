@@ -1,21 +1,8 @@
-# Use an official Python runtime as a parent image
-# NOTE: When running this container, you MUST use the --shm-size=2gb flag to prevent Chrome crashes.
-# Example: docker run -p 5000:5000 --shm-size=2gb <image_name>
-FROM python:3.10-slim
+# Use Windows Server Core with Python (LTSC 2022 is generally compatible with modern Windows 10/11 hosts)
+FROM python:3.10-windowsservercore-ltsc2022
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV TELEGRAM_ALERT_CHAT_ID=0
-
-# Install system dependencies (Chrome + others)
-RUN apt-get update && apt-get install -y \
-    wget \
-    gnupg \
-    unzip \
-    curl \
-    && apt-get clean
-
+# Set PowerShell as default shell
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
 # Set working directory
 WORKDIR /app
@@ -29,19 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
-# Expose port 5000
+# Expose port
 EXPOSE 5000
 
-# Command to run the application
-# We need to run app.py inside web_gui
-# But we should be in root so python path resolves correctly if app.py imports modules from root?
-# Looking at app.py, it imports explicit "from telegram_handler".
-# "telegram_handler.py" is in "web_gui/".
-# So we should set WORKDIR to /app/web_gui or just run it from there?
-# If we run "python web_gui/app.py" from /app, imports might be tricky if sys.path isn't set.
-# But app.py has "sys.path.append(os.path.dirname(...))"?
-# Let's check app.py imports: "from telegram_handler import ...". This implies web_gui must be in sys.path or current dir.
-# Safest is to change dir to web_gui.
-
+# Run the application
 WORKDIR /app/web_gui
 CMD ["python", "app.py"]
