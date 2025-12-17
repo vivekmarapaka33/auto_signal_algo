@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     git \
     cargo \
     pkg-config \
+    libssl-dev \
     && apt-get clean
 
 # Install maturin for building Rust extension
