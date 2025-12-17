@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     git \
     pkg-config \
     libssl-dev \
+    build-essential \
     && apt-get clean
 
 # Install Rust via rustup (Debian package is too old)
