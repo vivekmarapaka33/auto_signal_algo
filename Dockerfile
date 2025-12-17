@@ -1,4 +1,6 @@
 # Use an official Python runtime as a parent image
+# NOTE: When running this container, you MUST use the --shm-size=2gb flag to prevent Chrome crashes.
+# Example: docker run -p 5000:5000 --shm-size=2gb <image_name>
 FROM python:3.10-slim
 
 # Set environment variables
