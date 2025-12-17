@@ -459,9 +459,18 @@ def kill_zombie_chrome():
     try:
         print("🧹 Cleaning up zombie Chrome processes...")
         # Redirect output to DEVNULL to avoid clutter
-        subprocess.run(["taskkill", "/F", "/IM", "chrome.exe"], 
-                       stdout=subprocess.DEVNULL, 
-                       stderr=subprocess.DEVNULL)
+        if os.name == 'nt':
+            subprocess.run(["taskkill", "/F", "/IM", "chrome.exe"], 
+                           stdout=subprocess.DEVNULL, 
+                           stderr=subprocess.DEVNULL)
+        else:
+            # Linux/Mac support for Docker
+            subprocess.run(["pkill", "-f", "chrome"], 
+                           stdout=subprocess.DEVNULL, 
+                           stderr=subprocess.DEVNULL)
+            subprocess.run(["pkill", "-f", "chromedriver"], 
+                           stdout=subprocess.DEVNULL, 
+                           stderr=subprocess.DEVNULL)
     except Exception:
         pass
 

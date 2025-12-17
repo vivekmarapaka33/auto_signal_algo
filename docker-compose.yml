@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: prediction_app
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mount the current directory so code changes apply (except generic root files being shadowed if WORKDIR changed?)
+      # Since we changed WORKDIR to /app/web_gui in Dockerfile, mounting . to /app works.
+      - .:/app
+    environment:
+      - TELEGRAM_ALERT_CHAT_ID=0
+      # Add other env vars here
+    restart: unless-stopped
+    # Use shm-size=2gb to prevent Chrome crashes
+    shm_size: '2gb'

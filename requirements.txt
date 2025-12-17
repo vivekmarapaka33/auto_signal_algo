@@ -3,3 +3,5 @@ pyaes==1.6.1
 pyasn1==0.6.1
 rsa==4.9.1
 Telethon==1.42.0
+Flask==3.0.0
+flask-cors==4.0.0
