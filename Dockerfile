@@ -24,10 +24,10 @@ RUN pip install maturin
 
 # Clone and build BinaryOptionsTools-v2
 RUN git clone https://github.com/ChipaDevTeam/BinaryOptionsTools-v2.git \
-    && cd BinaryOptionsTools-v2 \
+    && cd BinaryOptionsTools-v2/BinaryOptionsToolsV2 \
     && maturin build -r \
     && pip install target/wheels/*.whl \
-    && cd .. \
+    && cd ../.. \
     && rm -rf BinaryOptionsTools-v2
 
 
