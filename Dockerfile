@@ -21,19 +21,21 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean
 
 # Install Rust via rustup (Debian package is too old)
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
+# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Install maturin for building Rust extension
-RUN pip install maturin
+# # Install maturin for building Rust extension
+# RUN pip install maturin
 
-# Clone and build BinaryOptionsTools-v2
-RUN git clone https://github.com/ChipaDevTeam/BinaryOptionsTools-v2.git \
-    && cd BinaryOptionsTools-v2/BinaryOptionsToolsV2 \
-    && maturin build -r \
-    && pip install target/wheels/*.whl \
-    && cd ../.. \
-    && rm -rf BinaryOptionsTools-v2
+# # Clone and build BinaryOptionsTools-v2
+# RUN git clone https://github.com/ChipaDevTeam/BinaryOptionsTools-v2.git \
+#     && cd BinaryOptionsTools-v2/BinaryOptionsToolsV2 \
+#     && maturin build -r \
+#     && pip install target/wheels/*.whl \
+#     && cd ../.. \
+#     && rm -rf BinaryOptionsTools-v2
+
+RUN pip install "https://github.com/ChipaDevTeam/BinaryOptionsTools-v2/blob/master/wheels/BinaryOptionsToolsV2-0.2.0-cp38-abi3-manylinux_2_34_x86_64.whl?raw=true"
 
 
 # Set working directory
