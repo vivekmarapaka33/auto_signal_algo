@@ -1,0 +1,5 @@
+2025-12-17 18:46:51,512 - TelegramSignalTrader - ERROR - assets.json not found!
+2025-12-17 18:46:51,513 - TelegramSignalTrader - INFO - Received message: CATCH UP 2 min UP
+2025-12-17 18:46:51,514 - TelegramSignalTrader - INFO - Catch-up signal! Direction: call, Time: 120s
+2025-12-17 18:46:51,515 - TelegramSignalTrader - INFO - Received message: CATCH UP 5 min DOWN🔽
+2025-12-17 18:46:51,515 - TelegramSignalTrader - INFO - Catch-up signal! Direction: put, Time: 300s

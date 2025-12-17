@@ -229,14 +229,29 @@ class TelegramSignalTrader:
             'timeframe': self.current_timeframe_sec
         })
 
-        # 1. Try Parse Timeframe
+        # 1. Try Parse Catch-Up (Martingale) - PRIORITY
+        # Check this FIRST so "2 min" inside a catchup message doesn't trigger a simple timeframe update.
+        if "CATCH UP" in text.upper():
+            catchup = self._parse_catchup(text)
+            if catchup:
+                direction, time_sec = catchup
+                self.current_timeframe_sec = time_sec
+                self.in_catchup = True
+                
+                logger.info(f"Catch-up signal! Direction: {direction}, Time: {time_sec}s")
+                await self._execute_trade(direction, is_catchup=True)
+            else:
+                logger.warning("Message contained 'CATCH UP' but failed to parse direction or timeframe. Ignoring to prevent errors.")
+            return
+
+        # 2. Try Parse Timeframe
         timeframe = self._parse_timeframe(text)
         if timeframe:
             self.current_timeframe_sec = timeframe
             logger.info(f"Updated timeframe to {timeframe} seconds")
             return
 
-        # 2. Try Parse Asset
+        # 3. Try Parse Asset
         # Check if text is in our list of valid assets
         if text in self.assets:
             if("OTC" in text):
@@ -244,25 +259,6 @@ class TelegramSignalTrader:
                 
             self.current_asset = text.replace(" ", "_").replace("/", "")
             logger.info(f"Updated asset to {self.current_asset}")
-            return
-
-        # 3. Try Parse Catch-Up (Martingale)
-        catchup = self._parse_catchup(text)
-        if catchup:
-            direction, time_sec = catchup
-            self.current_timeframe_sec = time_sec
-            self.in_catchup = True
-            
-            # Double amounts for all brokers
-            # For percentage based: we need to know the base first. 
-            # If we are in catchup, we assume we continue from previous logic.
-            # But here we just set a flag to double whatever the calculation results in?
-            # Or we strictly double the *previous* traded amount?
-            # Prompt: "Double current trade amount"
-            # Since we calculate dynamic base, we'll handle doubling in _execute_trade
-            
-            logger.info(f"Catch-up signal! Direction: {direction}, Time: {time_sec}s")
-            await self._execute_trade(direction, is_catchup=True)
             return
 
         # 4. Try Parse Normal Direction
@@ -286,6 +282,10 @@ class TelegramSignalTrader:
         """
         # Simplify text: uppercased for consistent matching
         msg = text.upper()
+
+        # Ignore "Candles M1", "Candles M5" etc as per user request
+        # If the text contains "Candles M...", we strip it out so it doesn't trigger a timeframe update
+        msg = re.sub(r"CANDLES\s+M\d+", "", msg)
 
         # 1. Check for MM:SS format (e.g., "2:00", "01:30", "2:00 minute")
         # specific regex that finds digits:digits (capturing groups)
