@@ -1,39 +1,60 @@
-2025-12-17 18:57:24,934 - TelegramSignalTrader - INFO - Clearing 0 brokers...
-2025-12-17 18:57:25,981 - TelegramSignalTrader - INFO - Added broker with 10.0% trade size
-2025-12-17 19:02:51,817 - TelegramSignalTrader - INFO - Received message: M1
-2025-12-17 19:02:51,817 - TelegramSignalTrader - INFO - Updated timeframe to 60 seconds
-2025-12-17 19:02:51,818 - TelegramSignalTrader - INFO - Received message: USD/JPY OTC
-2025-12-17 19:02:51,818 - TelegramSignalTrader - INFO - Updated asset to USDJPY_otc
-2025-12-17 19:02:51,819 - TelegramSignalTrader - INFO - Received message: DOWN🔽
-2025-12-17 19:02:51,819 - TelegramSignalTrader - INFO - ⚡ Executing trade: put (Catchup: False)
-2025-12-17 19:02:51,819 - TelegramSignalTrader - INFO -   > queuing broker 0
-2025-12-17 19:02:51,820 - TelegramSignalTrader - INFO - Received message: CATCH UP 2 min DOWN🔽
-2025-12-17 19:02:51,820 - TelegramSignalTrader - INFO - Catch-up signal! Direction: put, Time: 120s
-2025-12-17 19:02:51,820 - TelegramSignalTrader - INFO - ⚡ Executing trade: put (Catchup: True)
-2025-12-17 19:02:51,821 - TelegramSignalTrader - INFO -   > queuing broker 0
-2025-12-17 19:02:51,821 - TelegramSignalTrader - INFO - Received message: CATCH UP 1 min UP
-2025-12-17 19:02:51,821 - TelegramSignalTrader - INFO - Catch-up signal! Direction: call, Time: 60s
-2025-12-17 19:02:51,821 - TelegramSignalTrader - INFO - ⚡ Executing trade: call (Catchup: True)
-2025-12-17 19:02:51,821 - TelegramSignalTrader - INFO -   > queuing broker 0
-2025-12-17 19:02:51,822 - TelegramSignalTrader - INFO - Received message: DOWN🔽
-2025-12-17 19:02:51,822 - TelegramSignalTrader - INFO - ⚡ Executing trade: put (Catchup: False)
-2025-12-17 19:02:51,822 - TelegramSignalTrader - INFO -   > queuing broker 0
-2025-12-17 19:02:51,823 - TelegramSignalTrader - INFO -   > Fetching balance...
-2025-12-17 19:02:51,823 - TelegramSignalTrader - INFO -   > Balance raw response: 70825.01
-2025-12-17 19:02:51,824 - TelegramSignalTrader - INFO -   > Placing put trade for $7082.50 on USDJPY_otc (60s)
-2025-12-17 19:02:51,824 - TelegramSignalTrader - INFO -   > Fetching balance...
-2025-12-17 19:02:51,824 - TelegramSignalTrader - INFO -   > Balance raw response: 70825.01
-2025-12-17 19:02:51,824 - TelegramSignalTrader - INFO -   > Placing put trade for $14165.00 on USDJPY_otc (60s)
-2025-12-17 19:02:51,825 - TelegramSignalTrader - INFO -   > Fetching balance...
-2025-12-17 19:02:51,825 - TelegramSignalTrader - INFO -   > Balance raw response: 70825.01
-2025-12-17 19:02:51,825 - TelegramSignalTrader - INFO -   > Placing call trade for $28330.00 on USDJPY_otc (60s)
-2025-12-17 19:02:51,825 - TelegramSignalTrader - INFO -   > Fetching balance...
-2025-12-17 19:02:51,825 - TelegramSignalTrader - INFO -   > Balance raw response: 70825.01
-2025-12-17 19:02:51,825 - TelegramSignalTrader - INFO -   > Placing put trade for $7082.50 on USDJPY_otc (60s)
-2025-12-17 19:02:51,826 - TelegramSignalTrader - ERROR - ❌ Trade failed for broker: PocketOptionError, General error: Amount must be at most 20000
-2025-12-17 19:02:52,117 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: 1ac6768c-e92a-4e68-8bfc-2f4f8c51f5e2
-2025-12-17 19:02:52,117 - TelegramSignalTrader - INFO -    Data: {'id': '1ac6768c-e92a-4e68-8bfc-2f4f8c51f5e2', 'openTime': '2025-12-17 15:32:51', 'closeTime': '2025-12-17 15:33:51', 'openTimestamp': 1765985571.0, 'closeTimestamp': 1765985631.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 118330943, 'requestId': 'cf994676-8d01-46fe-a255-f1cdf7241694', 'amount': 7082.5, 'profit': 5807.65, 'percentProfit': 82, 'percentLoss': 100, 'openPrice': 152.309, 'closePrice': 0.0, 'command': 1, 'asset': 'USDJPY_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 49, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
-2025-12-17 19:02:52,156 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: a76812e1-c395-440b-b259-31efb337a7cf
-2025-12-17 19:02:52,156 - TelegramSignalTrader - INFO -    Data: {'id': 'a76812e1-c395-440b-b259-31efb337a7cf', 'openTime': '2025-12-17 15:32:51', 'closeTime': '2025-12-17 15:33:51', 'openTimestamp': 1765985571.0, 'closeTimestamp': 1765985631.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 118330943, 'requestId': 'd52519d0-0e53-437c-879a-5a40afffa6d4', 'amount': 14165.0, 'profit': 11615.3, 'percentProfit': 82, 'percentLoss': 100, 'openPrice': 152.309, 'closePrice': 0.0, 'command': 1, 'asset': 'USDJPY_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 49, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
-2025-12-17 19:02:52,157 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: 2ab486d3-ed6a-4c2a-afb6-7925acac5f0d
-2025-12-17 19:02:52,157 - TelegramSignalTrader - INFO -    Data: {'id': '2ab486d3-ed6a-4c2a-afb6-7925acac5f0d', 'openTime': '2025-12-17 15:32:51', 'closeTime': '2025-12-17 15:33:51', 'openTimestamp': 1765985571.0, 'closeTimestamp': 1765985631.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 118330943, 'requestId': '898f35c4-1616-4a0e-9e93-12c97176184e', 'amount': 7082.5, 'profit': 5807.65, 'percentProfit': 82, 'percentLoss': 100, 'openPrice': 152.309, 'closePrice': 0.0, 'command': 1, 'asset': 'USDJPY_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 49, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
+2025-12-22 18:44:40,232 - TelegramSignalTrader - INFO - Clearing 0 brokers...
+2025-12-22 18:44:41,823 - TelegramSignalTrader - INFO - Added broker with 10.0% trade size
+2025-12-22 18:59:35,160 - TelegramSignalTrader - INFO - Received message: CAD/JPY OTC
+2025-12-22 18:59:35,162 - TelegramSignalTrader - INFO - Updated asset to CADJPY_otc
+2025-12-22 18:59:35,171 - TelegramSignalTrader - INFO - Received message: 2 min
+2025-12-22 18:59:35,174 - TelegramSignalTrader - INFO - Updated timeframe to 120 seconds
+2025-12-22 18:45:47,143 - TelegramSignalTrader - INFO - Received message: 2 min
+2025-12-22 18:45:47,144 - TelegramSignalTrader - INFO - Updated timeframe to 120 seconds
+2025-12-22 18:46:35,686 - TelegramSignalTrader - INFO - Received message: DOWN🔽
+2025-12-22 18:46:35,687 - TelegramSignalTrader - INFO - ⚡ Executing trade: put (Catchup: False)
+2025-12-22 18:46:35,687 - TelegramSignalTrader - INFO -   > queuing broker 0
+2025-12-22 18:46:35,688 - TelegramSignalTrader - INFO -   > Fetching balance...
+2025-12-22 18:46:35,688 - TelegramSignalTrader - INFO -   > Balance raw response: 1039.52
+2025-12-22 18:46:35,689 - TelegramSignalTrader - INFO -   > Placing put trade for $103.95 on CADJPY_otc (120s)
+2025-12-22 18:46:35,959 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: e73e182c-b63f-41a3-bb6f-915146045f78
+2025-12-22 18:46:35,960 - TelegramSignalTrader - INFO -    Data: {'id': 'e73e182c-b63f-41a3-bb6f-915146045f78', 'openTime': '2025-12-22 15:16:35', 'closeTime': '2025-12-22 15:18:35', 'openTimestamp': 1766416595.0, 'closeTimestamp': 1766416715.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 118330943, 'requestId': '8371239e-1eb9-4ac3-a05a-7f09f08584cb', 'amount': 103.95, 'profit': 95.63, 'percentProfit': 92, 'percentLoss': 100, 'openPrice': 123.274, 'closePrice': 0.0, 'command': 1, 'asset': 'CADJPY_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 96, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
+2025-12-22 18:46:37,644 - TelegramSignalTrader - INFO - Received message: 
+2025-12-22 18:46:37,645 - TelegramSignalTrader - INFO - Message ignored (no matching instruction)
+2025-12-22 18:48:37,731 - TelegramSignalTrader - INFO - Received message: ✅✅✅
++64,4💲
+2025-12-22 18:48:37,731 - TelegramSignalTrader - INFO - Message ignored (no matching instruction)
+2025-12-22 18:55:18,632 - TelegramSignalTrader - INFO - Received message: DOWN🔽
+2025-12-22 18:55:18,632 - TelegramSignalTrader - INFO - ⚡ Executing trade: put (Catchup: False)
+2025-12-22 18:55:18,633 - TelegramSignalTrader - INFO -   > queuing broker 0
+2025-12-22 18:55:18,633 - TelegramSignalTrader - INFO -   > Fetching balance...
+2025-12-22 18:55:18,633 - TelegramSignalTrader - INFO -   > Balance raw response: 1135.15
+2025-12-22 18:55:18,633 - TelegramSignalTrader - INFO -   > Placing put trade for $113.52 on CADJPY_otc (120s)
+2025-12-22 18:55:18,881 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: da44ae9a-1ec0-44f2-ace2-9bc6b0b4d651
+2025-12-22 18:55:18,881 - TelegramSignalTrader - INFO -    Data: {'id': 'da44ae9a-1ec0-44f2-ace2-9bc6b0b4d651', 'openTime': '2025-12-22 15:25:18', 'closeTime': '2025-12-22 15:27:18', 'openTimestamp': 1766417118.0, 'closeTimestamp': 1766417238.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 118330943, 'requestId': '221bdaa0-71b4-48aa-8a71-73f921d3a6ea', 'amount': 113.52, 'profit': 104.44, 'percentProfit': 92, 'percentLoss': 100, 'openPrice': 123.251, 'closePrice': 0.0, 'command': 1, 'asset': 'CADJPY_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 145, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
+2025-12-22 18:55:19,729 - TelegramSignalTrader - INFO - Received message: 
+2025-12-22 18:55:19,730 - TelegramSignalTrader - INFO - Message ignored (no matching instruction)
+2025-12-22 18:57:59,309 - TelegramSignalTrader - INFO - Received message: ✅✅✅
++64,4💲
+2025-12-22 18:57:59,310 - TelegramSignalTrader - INFO - Message ignored (no matching instruction)
+2025-12-22 19:00:46,320 - TelegramSignalTrader - INFO - Received message: DOWN🔽
+2025-12-22 19:00:46,321 - TelegramSignalTrader - INFO - ⚡ Executing trade: put (Catchup: False)
+2025-12-22 19:00:46,321 - TelegramSignalTrader - INFO -   > queuing broker 0
+2025-12-22 19:00:46,323 - TelegramSignalTrader - INFO -   > Fetching balance...
+2025-12-22 19:00:46,324 - TelegramSignalTrader - INFO -   > Balance raw response: 1239.59
+2025-12-22 19:00:46,324 - TelegramSignalTrader - INFO -   > Placing put trade for $123.96 on CADJPY_otc (120s)
+2025-12-22 19:00:46,569 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: 280c06a0-0880-4a6d-ac40-cf32802cf3bc
+2025-12-22 19:00:46,571 - TelegramSignalTrader - INFO -    Data: {'id': '280c06a0-0880-4a6d-ac40-cf32802cf3bc', 'openTime': '2025-12-22 15:30:45', 'closeTime': '2025-12-22 15:32:45', 'openTimestamp': 1766417445.0, 'closeTimestamp': 1766417565.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 118330943, 'requestId': 'b0ce6459-5e87-4edf-bb97-5ed73b5e3f9b', 'amount': 123.96, 'profit': 114.04, 'percentProfit': 92, 'percentLoss': 100, 'openPrice': 123.302, 'closePrice': 0.0, 'command': 1, 'asset': 'CADJPY_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 739, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
+2025-12-22 19:00:47,036 - TelegramSignalTrader - INFO - Received message: 
+2025-12-22 19:00:47,038 - TelegramSignalTrader - INFO - Message ignored (no matching instruction)
+2025-12-22 19:08:08,067 - TelegramSignalTrader - INFO - Received message: CATCH UP 2 min UP🔼
+2025-12-22 19:08:08,069 - TelegramSignalTrader - INFO - Catch-up signal! Direction: call, Time: 120s
+2025-12-22 19:08:08,069 - TelegramSignalTrader - INFO - ⚡ Executing trade: call (Catchup: True)
+2025-12-22 19:08:08,070 - TelegramSignalTrader - INFO -   > queuing broker 0
+2025-12-22 19:08:08,071 - TelegramSignalTrader - INFO -   > Fetching balance...
+2025-12-22 19:08:08,072 - TelegramSignalTrader - INFO -   > Balance raw response: 1115.63
+2025-12-22 19:08:08,073 - TelegramSignalTrader - INFO -   > Placing call trade for $247.92 on CADJPY_otc (120s)
+2025-12-22 19:08:08,549 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: 5fd0c39f-3cc9-4703-a558-a56a1b383cb4
+2025-12-22 19:08:08,551 - TelegramSignalTrader - INFO -    Data: {'id': '5fd0c39f-3cc9-4703-a558-a56a1b383cb4', 'openTime': '2025-12-22 15:38:07', 'closeTime': '2025-12-22 15:40:07', 'openTimestamp': 1766417887.0, 'closeTimestamp': 1766418007.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 118330943, 'requestId': 'cc16e2db-926e-4e2d-a017-ddece85976a0', 'amount': 247.92, 'profit': 228.09, 'percentProfit': 92, 'percentLoss': 100, 'openPrice': 123.383, 'closePrice': 0.0, 'command': 0, 'asset': 'CADJPY_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 947, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
+2025-12-22 19:10:24,503 - TelegramSignalTrader - INFO - Received message: ✅✅✅
++296,24💲
+2025-12-22 19:10:24,504 - TelegramSignalTrader - INFO - Message ignored (no matching instruction)
+2025-12-22 19:10:53,859 - TelegramSignalTrader - INFO - Received message: PUT ❤️ IF YOU ALSO HAD A PROFIT
+2025-12-22 19:10:53,865 - TelegramSignalTrader - INFO - Message ignored (no matching instruction)
+2025-12-22 19:14:03,187 - TelegramSignalTrader - INFO - Received message: 🤩Balance after trading 🤩
+2025-12-22 19:14:03,189 - TelegramSignalTrader - INFO - Message ignored (no matching instruction)

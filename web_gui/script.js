@@ -83,10 +83,13 @@ let savedChannelId = '';
 
 if (startListenBtn) {
     startListenBtn.addEventListener('click', async () => {
-        // Use savedChannelId as default value
-        const defaultValue = savedChannelId || '';
-        const channelId = prompt('Enter Telegram channel/group ID (numeric)', defaultValue);
-        if (!channelId) return;
+        // Use input field value
+        const channelInput = document.getElementById('channelIdInput');
+        const channelId = channelInput ? channelInput.value.trim() : '';
+        if (!channelId) {
+            showError('Please enter a Channel ID');
+            return;
+        }
         try {
             const resp = await fetch('/api/telegram/listen', {
                 method: 'POST',
