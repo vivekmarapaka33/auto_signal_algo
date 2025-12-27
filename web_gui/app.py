@@ -482,8 +482,11 @@ def delayed_startup():
 
 if __name__ == '__main__':
     print("🚀 Starting PocketOption Web GUI...")
-    # Schedule the sync slightly later so it doesn't block app.run from capturing stdout/port immediately
-    threading.Timer(5.0, delayed_startup).start()
+    # Only run delayed startup if we are in the reloader subprocess (WERKZEUG_RUN_MAIN='true') 
+    # OR if debug is disabled (standard run).
+    # This prevents running it twice (once in main, once in reloader).
+    if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        threading.Timer(5.0, delayed_startup).start()
     
     print("📡 Server running at: http://localhost:5000")
     print("Press Ctrl+C to stop the server")

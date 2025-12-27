@@ -100,7 +100,7 @@ class TelegramSignalTrader:
         """
         Executes trade on all brokers.
         """
-        logger.info(f"⚡ Executing trade: {direction} (Catchup: {is_catchup})")
+        logger.info(f"⚡ Executing trade: {direction} (Catchup: {is_catchup}) | Brokers: {len(self.brokers)}")
         if not self.brokers:
             logger.error("❌ No brokers registered! Cannot trade.")
             return
