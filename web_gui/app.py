@@ -510,18 +510,20 @@ def kill_zombie_chrome():
 
 # Initialize brokers on startup with a delay to let Flask start
 def delayed_startup():
-    kill_zombie_chrome()
+    # kill_zombie_chrome()
     print("⏳ Waiting 5s before syncing brokers to allow Server startup...")
     asyncio.run_coroutine_threadsafe(sync_brokers_from_ssids(_load_ssids()), telegram_handler.loop)
+
 
 if __name__ == '__main__':
     print("🚀 Starting PocketOption Web GUI...")
     # Only run delayed startup if we are in the reloader subprocess (WERKZEUG_RUN_MAIN='true') 
     # OR if debug is disabled (standard run).
     # This prevents running it twice (once in main, once in reloader).
-    if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-        threading.Timer(5.0, delayed_startup).start()
+    # EDIT: User requested NO auto-restart/reloader. So we run cleanly once.
+    threading.Timer(5.0, delayed_startup).start()
     
     print("📡 Server running at: http://localhost:5000")
+
     print("Press Ctrl+C to stop the server")
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    app.run(debug=True, use_reloader=False, port=5000, host='0.0.0.0')

@@ -215,15 +215,52 @@ class TelegramSignalTrader:
             logger.error(f"❌ Trade failed for broker: {e}")
             import traceback
             traceback.print_exc()
-    async def handle_message(self, text: str) -> None:
+    async def handle_message(self, message_data) -> None:
         """
         Process an incoming Telegram message.
         """
-        text = text.strip()
+        from datetime import datetime, timezone, timedelta
+        
+        text = ""
+        msg_date = None
+        msg_id = None
+        
+        # 1. Parse Input Data
+        if isinstance(message_data, dict):
+            text = message_data.get('raw', '').strip()
+            msg_id = message_data.get('id')
+            date_str = message_data.get('date')
+            try:
+                if date_str:
+                    msg_date = datetime.fromisoformat(str(date_str))
+            except Exception as e:
+                logger.warning(f"Could not parse message date: {e}")
+        else:
+            text = str(message_data).strip()
+
         logger.info(f"Received message: {text}")
 
+        # 2. STATE CHECK & DEDUPLICATION (User Request)
+        # "Wait for new telegram signal... use some variable state"
+        if msg_id:
+            # We use a primitive 'last_id' state to ensure we process each unique message exactly once
+            if getattr(self, 'last_processed_id', None) == msg_id:
+                logger.warning(f"🔄 Ignoring DUPLICATE message ID: {msg_id} (Already processed)")
+                return
+            self.last_processed_id = msg_id
+        
+        # 3. Check for Stale Message (Time Validation)
+        if msg_date:
+            now_utc = datetime.now(timezone.utc)
+            if msg_date.tzinfo is None:
+                msg_date = msg_date.replace(tzinfo=timezone.utc)
+            
+            age = (now_utc - msg_date).total_seconds()
+            if age > 120:
+                logger.warning(f"⚠️ Ignoring STALE message! Age: {age:.1f}s. Date: {msg_date}")
+                return
+
         # Store message for UI
-        from datetime import datetime
         self.last_messages.appendleft({
             'time': datetime.now().strftime('%H:%M:%S'),
             'text': text,
@@ -231,8 +268,7 @@ class TelegramSignalTrader:
             'timeframe': self.current_timeframe_sec
         })
 
-        # 1. Try Parse Catch-Up (Martingale) - PRIORITY
-        # Check this FIRST so "2 min" inside a catchup message doesn't trigger a simple timeframe update.
+        # 4. Try Parse Catch-Up (Martingale) - PRIORITY
         if "CATCH UP" in text.upper():
             catchup = self._parse_catchup(text)
             if catchup:
@@ -243,18 +279,30 @@ class TelegramSignalTrader:
                 logger.info(f"Catch-up signal! Direction: {direction}, Time: {time_sec}s")
                 await self._execute_trade(direction, is_catchup=True)
             else:
-                logger.warning("Message contained 'CATCH UP' but failed to parse direction or timeframe. Ignoring to prevent errors.")
+                logger.warning("Message contained 'CATCH UP' but failed to parse direction.")
             return
 
-        # 2. Try Parse Timeframe
+        # 5. RESULT/STATUS FILTER (Prevent False Trades)
+        # Avoid triggering "UP" from "UP WON" or "AUD/USD RESULT"
+        result_keywords = ["WIN", "WON", "PROFIT", "ITM", "OTM", "ATM", "✅", "❌", "RESULT"]
+        text_upper = text.upper()
+        
+        is_result = any(k in text_upper for k in result_keywords)
+        if not is_result and re.search(r'\b(LOSS|LOST)\b', text_upper):
+            is_result = True
+
+        if is_result:
+             logger.info(f"🛑 Ignoring Result/Status message: {text}")
+             return
+
+        # 6. Try Parse Timeframe
         timeframe = self._parse_timeframe(text)
         if timeframe:
             self.current_timeframe_sec = timeframe
             logger.info(f"Updated timeframe to {timeframe} seconds")
             return
 
-        # 3. Try Parse Asset
-        # Check if text is in our list of valid assets
+        # 7. Try Parse Asset
         if text in self.assets:
             if("OTC" in text):
                 text = text.replace("OTC", "otc")
@@ -263,7 +311,7 @@ class TelegramSignalTrader:
             logger.info(f"Updated asset to {self.current_asset}")
             return
 
-        # 4. Try Parse Normal Direction
+        # 8. Try Parse Normal Direction
         direction = self._parse_direction(text)
         if direction:
             if not self.current_asset or not self.current_timeframe_sec:
@@ -272,6 +320,7 @@ class TelegramSignalTrader:
             
             self.in_catchup = False
             await self._execute_trade(direction, is_catchup=False)
+            # Trade placed. State 'last_processed_id' prevents re-run of this same msg.
             return
 
         logger.info("Message ignored (no matching instruction)")
@@ -280,17 +329,14 @@ class TelegramSignalTrader:
     def _parse_timeframe(self, text: str) -> Optional[int]:
         """
         Parses timeframe string to seconds.
-        Supports: "2:00 minute", "2 min", "1MIN", "1:00", "M1", "3 minute", etc.
         """
         # Simplify text: uppercased for consistent matching
         msg = text.upper()
 
-        # Ignore "Candles M1", "Candles M5" etc as per user request
-        # If the text contains "Candles M...", we strip it out so it doesn't trigger a timeframe update
+        # Ignore "Candles M1", "Candles M5" etc
         msg = re.sub(r"CANDLES\s+M\d+", "", msg)
 
-        # 1. Check for MM:SS format (e.g., "2:00", "01:30", "2:00 minute")
-        # specific regex that finds digits:digits (capturing groups)
+        # 1. Check for MM:SS format (e.g., "2:00", "01:30")
         match_colon = re.search(r"(\d+):(\d+)", msg)
         if match_colon:
             try:
@@ -303,8 +349,6 @@ class TelegramSignalTrader:
                 pass
 
         # 2. Check for explicit Minutes (e.g. "2 min", "5 minutes", "1M")
-        # We look for number followed optionally by space then unit. 
-        # \b ensures we don't match something weird inside a word, though strictly "1M" might be attached.
         match_min = re.search(r"\b(\d+)\s*(MINUTES?|MIN|M)\b", msg)
         if match_min:
             try:
@@ -322,10 +366,7 @@ class TelegramSignalTrader:
             except ValueError:
                 pass
         
-        # 4. Check for just number + " MIN" attached without space from cleaning?
-        # The above regexes cover "1MIN" via \s*. 
-        
-        # 5. Handle "1 second", "30 sec" just in case user mentioned "1sec to 30 min"
+        # 5. Handle "1 second", "30 sec"
         match_sec = re.search(r"\b(\d+)\s*(SECONDS?|SEC|S)\b", msg)
         if match_sec:
            try:
@@ -338,16 +379,12 @@ class TelegramSignalTrader:
 
     def _parse_direction(self, text: str) -> Optional[str]:
         """Parses direction UP/DOWN."""
-        up_variants = ["UP", "🔼UP"]
-        down_variants = ["DOWN", "DOWN🔽"]
+        t = text.upper()
         
-        t = text.upper().replace(" ", "")
-        
-        # Iterate to check exact or partial matches if needed, but strict is safer
-        # Prompt examples are exact strings.
-        if any(v in t for v in up_variants):
-            return "call" 
-        if any(v in t for v in down_variants):
+        # Simple inclusion check as requested (not strict)
+        if "UP" in t or "🔼" in t:
+            return "call"
+        if "DOWN" in t or "🔽" in t:
             return "put"
             
         return None

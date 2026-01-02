@@ -224,6 +224,7 @@ class TelegramHandler:
                 parsed = self.parse_message(msg_text)
                 parsed['date'] = str(event.message.date)
                 parsed['channel_id'] = channel_id
+                parsed['id'] = event.message.id  # Add ID for state tracking
                 self.messages.append(parsed)
                 print(f"\n{'='*20} NEW MESSAGE {'='*20}")
                 print(f"CHANNEL: {channel_id}")
@@ -234,9 +235,9 @@ class TelegramHandler:
                 if hasattr(self, 'on_message_callback') and self.on_message_callback:
                     try:
                         if asyncio.iscoroutinefunction(self.on_message_callback):
-                            await self.on_message_callback(msg_text)
+                            await self.on_message_callback(parsed)
                         else:
-                            self.on_message_callback(msg_text)
+                            self.on_message_callback(parsed)
                     except Exception as e:
                         print(f"⚠️ Error in message callback: {e}")
             
