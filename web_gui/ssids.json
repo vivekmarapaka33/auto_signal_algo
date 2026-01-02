@@ -4,6 +4,18 @@
     "ssid": "42[\"auth\",{\"session\":\"di4bbrnrf9jac1vtn3ejifiaf4\",\"isDemo\":1,\"uid\":118330943,\"platform\":2,\"isFastHistory\":true,\"isOptimized\":true}]",
     "percentage": 10,
     "fixed_amount": null,
-    "last_balance": 201.43
+    "last_balance": 862.7
+  },
+  {
+    "name": "RAFI_0",
+    "ssid": "42[\"auth\",{\"session\":\"aviebos16hu3i9vnf2uragn3mu\",\"isDemo\":1,\"uid\":118203353,\"platform\":2,\"isFastHistory\":true,\"isOptimized\":true}]",
+    "percentage": 5,
+    "fixed_amount": null
+  },
+  {
+    "name": "pp_0",
+    "ssid": "42[\"auth\",{\"session\":\"q5gra0v122ptqr1qmnnpp160bn\",\"isDemo\":1,\"uid\":106835096,\"platform\":2,\"isFastHistory\":true,\"isOptimized\":true}]",
+    "percentage": 10,
+    "fixed_amount": null
   }
 ]

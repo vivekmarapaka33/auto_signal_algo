@@ -56,16 +56,18 @@ class TelegramSignalTrader:
             logger.error("Error decoding assets.json")
             return []
 
-    def add_broker(self, api_client, percentage: float, fixed_amount: float = None):
+    def add_broker(self, ssid: str, api_client, percentage: float, fixed_amount: float = None):
         """
         Registers a broker/account to trade on.
         
         Args:
+            ssid: The raw SSID string (used for identification).
             api_client: The async API client.
             percentage: Percentage of balance to use for initial trade.
             fixed_amount: Optional fixed amount to use instead of percentage.
         """
         self.brokers.append({
+            "ssid": ssid,
             "api": api_client,
             "percentage": float(percentage),
             "fixed_amount": float(fixed_amount) if fixed_amount else None,
@@ -74,7 +76,7 @@ class TelegramSignalTrader:
             "last_trade_id": None
         })
         desc = f"{fixed_amount} fixed" if fixed_amount else f"{percentage}%"
-        logger.info(f"Added broker with {desc} trade size")
+        logger.info(f"Added broker for SSID {ssid[:10]}... with {desc} trade size")
 
     async def clear_brokers(self):
         """Disconnects and clears all registered brokers."""

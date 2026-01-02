@@ -326,15 +326,34 @@ def _load_ssids():
     return []
 
 async def sync_brokers_from_ssids(ssids):
-    """Rebuild trader brokers list from SSIDs. Runs on background loop."""
+    """Smartly sync trader brokers list from SSIDs. Runs on background loop."""
     try:
-        await trader.clear_brokers()
+        # Create a map of existing brokers by ssid for easy lookup
+        current_brokers_map = {b.get('ssid'): b for b in trader.brokers if b.get('ssid')}
+        new_ssids_map = {s['ssid']: s for s in ssids}
+        
         print(f"DEBUG: Found {len(ssids)} SSIDs to sync")
+        
+        # 1. Update Existing or Add New
         for i, s in enumerate(ssids):
-            print(f"DEBUG: Processing SSID {i+1}/{len(ssids)}")
-            if 'ssid' in s:
+            ssid_str = s['ssid']
+            
+            percentage = float(s.get('percentage', 10))
+            fixed_amount = s.get('fixed_amount')
+            if fixed_amount:
+                fixed_amount = float(fixed_amount)
+            
+            if ssid_str in current_brokers_map:
+                # Existing broker - just update settings
+                # print(f"DEBUG: SSID {i+1} already connected. Updating settings.")
+                broker = current_brokers_map[ssid_str]
+                broker['percentage'] = percentage
+                broker['fixed_amount'] = fixed_amount
+            else:
+                # New broker - Initialize
+                print(f"DEBUG: Found new SSID {i+1} to add. Initializing...")
                 print("DEBUG: Preprocessing SSID...")
-                final_ssid = preprocess_ssid(s['ssid'])
+                final_ssid = preprocess_ssid(ssid_str)
                 print(f"DEBUG: Initializing PocketOptionAsync for SSID {i+1}...")
                 
                 # Run blocking init in executor with timeout
@@ -347,24 +366,39 @@ async def sync_brokers_from_ssids(ssids):
                 except asyncio.TimeoutError:
                     print(f"❌ ERROR: Broker {i+1} initialization Timed Out!")
                     print("⚠️ Likely cause: Zombie Chrome processes from previous runs.")
-                    print("⚠️ Please run: stop the server, then 'taskkill /F /IM chrome.exe' in terminal.")
                     continue
                 except Exception as e:
                     print(f"❌ ERROR: Broker {i+1} initialization failed: {e}")
                     continue
                 
-                print("DEBUG: Client initialized. Reading settings...")
-                percentage = float(s.get('percentage', 10))
-                fixed_amount = s.get('fixed_amount')
-                if fixed_amount:
-                     fixed_amount = float(fixed_amount)
-                
                 print(f"DEBUG: Adding broker (pct={percentage}, fixed={fixed_amount})...")
-                trader.add_broker(client, percentage=percentage, fixed_amount=fixed_amount)
+                trader.add_broker(ssid_str, client, percentage=percentage, fixed_amount=fixed_amount)
                 print("DEBUG: Broker added.")
-        print(f"✅ Initialized trader with {len(trader.brokers)} brokers")
+
+        # 2. Remove Brokers that are no longer in the list
+        brokers_to_remove = []
+        for broker in trader.brokers:
+            b_ssid = broker.get('ssid')
+            # If broker has no ssid key (legacy?) or not in new map, remove it.
+            if not b_ssid or b_ssid not in new_ssids_map:
+                brokers_to_remove.append(broker)
+        
+        for broker in brokers_to_remove:
+            print(f"DEBUG: Removing broker for SSID {broker.get('ssid', 'unknown')[:15]}...")
+            api = broker.get('api')
+            if api and hasattr(api, 'disconnect'):
+                try:
+                    await api.disconnect()
+                except:
+                    pass
+            if broker in trader.brokers:
+                trader.brokers.remove(broker)
+
+        print(f"✅ Synced trader with {len(trader.brokers)} brokers")
     except Exception as e:
         print(f"⚠️ Failed to sync brokers: {e}")
+        import traceback
+        traceback.print_exc()
 
 def _save_ssids(ssids):
     try:
