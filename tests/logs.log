@@ -1,0 +1,6 @@
+2026-01-02T19:31:59.765125Z  INFO Runner: Starting connection cycle...
+2026-01-02T19:31:59.765642Z  INFO PocketConnectThread: Connecting to PocketOption at wss://demo-api-eu.po.market/socket.io/?EIO=4&transport=websocket
+2026-01-02T19:32:00.738206Z  INFO PocketConnect: Successfully connected to PocketOption
+2026-01-02T19:32:00.738542Z  INFO Runner: Connection successful.
+2026-01-02T19:32:00.738757Z  INFO Runner: Executing on_connect callback.
+2026-01-02T19:32:00.739651Z  INFO Lightweight: Received: Text(Utf8Bytes(b"0{\"sid\":\"8_EXalaDTk73KDZ2NewW\",\"upgrades\":[],\"pingInterval\":25000,\"pingTimeout\":20000,\"maxPayload\":1000000}"))

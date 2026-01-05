@@ -224,14 +224,55 @@ function initOHLCChart() {
         rightPriceScale: { borderVisible: false },
         timeScale: { borderVisible: false }
     });
-    const candleSeries = chart.addCandlestickSeries({
+    // Support multiple API versions
+    // v4.x: chart.addSeries(LightweightCharts.CandlestickSeries, options)
+    // v3.x: chart.addCandlestickSeries(options)
+    // v5.0+: chart.addSeries({ type: 'Candlestick', ... })
+    let candleSeries;
+    const seriesOptions = {
         upColor: '#4caf50',
         downColor: '#f44336',
         borderUpColor: '#4caf50',
         borderDownColor: '#f44336',
         wickUpColor: '#4caf50',
         wickDownColor: '#f44336'
-    });
+    };
+    
+    // Try v4.x API first (if CandlestickSeries exists)
+    if (LightweightCharts.CandlestickSeries && typeof chart.addSeries === 'function') {
+        try {
+            candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, seriesOptions);
+        } catch (e) {
+            // Fallback to v3.x API
+            if (typeof chart.addCandlestickSeries === 'function') {
+                candleSeries = chart.addCandlestickSeries(seriesOptions);
+            } else {
+                throw e;
+            }
+        }
+    }
+    // Try v5.0+ API if CandlestickSeries doesn't exist
+    else if (typeof chart.addSeries === 'function') {
+        try {
+            candleSeries = chart.addSeries({
+                type: 'Candlestick',
+                ...seriesOptions
+            });
+        } catch (e) {
+            // Fallback to v3.x API
+            if (typeof chart.addCandlestickSeries === 'function') {
+                candleSeries = chart.addCandlestickSeries(seriesOptions);
+            } else {
+                throw e;
+            }
+        }
+    } 
+    // Fallback to v3.x API
+    else if (typeof chart.addCandlestickSeries === 'function') {
+        candleSeries = chart.addCandlestickSeries(seriesOptions);
+    } else {
+        throw new Error('No compatible candlestick series API found');
+    }
     window.ohlcChart = { chart, candleSeries };
 }
 
