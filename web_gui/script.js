@@ -209,9 +209,17 @@ async function updateTraderStatus() {
         if (statusAsset) statusAsset.textContent = data.asset || '--';
         if (statusTimeframe) statusTimeframe.textContent = data.timeframe ? (data.timeframe + 's') : '--';
         const statusSession = document.getElementById('statusSession');
-        if (statusSession) {
-            statusSession.textContent = data.trading_active ? 'ACTIVE 🟢' : 'WAITING 🔴';
-            statusSession.style.color = data.trading_active ? '#4caf50' : '#f44336';
+        const sessionToggle = document.getElementById('sessionToggle');
+        
+        if (data.trading_active !== undefined) {
+             const active = data.trading_active;
+             if (statusSession) {
+                statusSession.textContent = active ? 'ACTIVE 🟢' : 'WAITING 🔴';
+                statusSession.style.color = active ? '#4caf50' : '#f44336';
+             }
+             if (sessionToggle) {
+                 sessionToggle.checked = active;
+             }
         }
         
         // Update Messages Table
@@ -540,5 +548,28 @@ window.addEventListener('load', () => {
     // Ensure start listening button hidden until login
     const startBtn = document.getElementById('startListenBtn');
     if (startBtn) startBtn.style.display = 'none';
+
+    // Session Toggle Listener
+    const sessionToggle = document.getElementById('sessionToggle');
+    if (sessionToggle) {
+        sessionToggle.addEventListener('change', async (e) => {
+            const active = e.target.checked;
+            try {
+                const resp = await fetch('/api/trader/session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active })
+                });
+                const data = await resp.json();
+                if (!data.success) {
+                    alert('Failed to update session: ' + data.error);
+                    e.target.checked = !active;
+                }
+            } catch (err) {
+                console.error('Error toggling session', err);
+                e.target.checked = !active; 
+            }
+        });
+    }
 });
 

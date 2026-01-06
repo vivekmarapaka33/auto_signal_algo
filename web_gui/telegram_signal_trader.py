@@ -102,6 +102,12 @@ class TelegramSignalTrader:
             'messages': list(self.last_messages)
         }
 
+    def set_trading_session(self, active: bool):
+        """Manually set trading session status."""
+        self.trading_active = active
+        status = "ACTIVE 🟢" if active else "INACTIVE 🔴"
+        logger.info(f"Manual Session Override: {status}")
+
     async def _execute_trade(self, direction, is_catchup=False):
         """
         Executes trade on all brokers.
@@ -280,6 +286,11 @@ class TelegramSignalTrader:
         if "SETTINGS FOR OPENING TRADES" in text_upper:
              self.trading_active = True
              logger.info("🟢 TRADING SESSION STARTED via Settings Message")
+             # Try to parse timeframe from this start message as requested
+             start_tf = self._parse_timeframe(text)
+             if start_tf:
+                 self.current_timeframe_sec = start_tf
+                 logger.info(f"   > Initial Timeframe set to {start_tf}s from settings")
         
         # Stop Pattern
         # "Balance after trading"
@@ -288,10 +299,7 @@ class TelegramSignalTrader:
              logger.info("🔴 TRADING SESSION ENDED via Balance Message")
              return
 
-        # Enforce Session
-        if not self.trading_active:
-             logger.info(f"⏳ Session inactive. Ignoring message: {text[:20]}...")
-             return
+        # REMOVED: Early return for inactive session, so we can listen to "Asset/Timeframe" even when off.
 
         # 4. Try Parse Catch-Up (Martingale) - PRIORITY
         if "CATCH UP" in text.upper():
@@ -302,7 +310,10 @@ class TelegramSignalTrader:
                 self.in_catchup = True
                 
                 logger.info(f"Catch-up signal! Direction: {direction}, Time: {time_sec}s")
-                await self._execute_trade(direction, is_catchup=True)
+                if self.trading_active:
+                    await self._execute_trade(direction, is_catchup=True)
+                else:
+                    logger.info("🚫 Session Inactive: Skipping Catch-up Trade")
             else:
                 logger.warning("Message contained 'CATCH UP' but failed to parse direction.")
             return
@@ -344,8 +355,12 @@ class TelegramSignalTrader:
                 return
             
             self.in_catchup = False
-            await self._execute_trade(direction, is_catchup=False)
-            # Trade placed. State 'last_processed_id' prevents re-run of this same msg.
+            
+            if self.trading_active:
+                await self._execute_trade(direction, is_catchup=False)
+            else:
+                logger.info("🚫 Session Inactive: Skipping Normal Trade")
+            # Trade placed (or skipped). State 'last_processed_id' prevents re-run of this same msg.
             return
 
         logger.info("Message ignored (no matching instruction)")

@@ -1,61 +1,49 @@
-2026-01-06 14:32:54,952 - TelegramSignalTrader - INFO - Added broker for SSID 42["auth",... with 1.0% trade size
-2026-01-06 14:32:55,929 - TelegramSignalTrader - INFO - Added broker for SSID 42["auth",... with 1.0% trade size
-2026-01-06 14:32:56,967 - TelegramSignalTrader - INFO - Added broker for SSID 42["auth",... with 1.0% trade size
-2026-01-06 14:33:18,729 - TelegramSignalTrader - INFO - Added broker for SSID 42["auth",... with 1.0% trade size
-2026-01-06 14:36:02,715 - TelegramSignalTrader - INFO - Received message: AUD/USD OTC
-2026-01-06 14:36:02,716 - TelegramSignalTrader - INFO - ⏳ Session inactive. Ignoring message: AUD/USD OTC...
-2026-01-06 14:36:14,493 - TelegramSignalTrader - INFO - Received message: 1:00
-2026-01-06 14:36:14,495 - TelegramSignalTrader - INFO - ⏳ Session inactive. Ignoring message: 1:00...
-2026-01-06 14:36:34,036 - TelegramSignalTrader - INFO - Received message: ⚙️ Settings for opening trades
+2026-01-06 18:00:36,349 - TelegramSignalTrader - INFO - Added broker for SSID 42["auth",... with 1.0% trade size
+2026-01-06 18:00:37,415 - TelegramSignalTrader - INFO - Added broker for SSID 42["auth",... with 1.0% trade size
+2026-01-06 18:00:38,434 - TelegramSignalTrader - INFO - Added broker for SSID 42["auth",... with 1.0% trade size
+2026-01-06 18:00:50,216 - TelegramSignalTrader - INFO - Received message: ⚙️ Settings for opening trades
 
  🏷 Time we choose 2:00 minute
  🏷 The amount of money per trade - use 1-5% of your deposit, so you can use catch-up system
-2026-01-06 14:36:34,036 - TelegramSignalTrader - INFO - 🟢 TRADING SESSION STARTED via Settings Message
-2026-01-06 14:36:34,037 - TelegramSignalTrader - INFO - Updated timeframe to 120 seconds
-2026-01-06 14:36:58,918 - TelegramSignalTrader - INFO - Received message: AUD/USD OTC
-2026-01-06 14:36:58,919 - TelegramSignalTrader - INFO - Updated asset to AUDUSD_otc
-2026-01-06 14:37:05,472 - TelegramSignalTrader - INFO - Received message: 1:00
-2026-01-06 14:37:05,473 - TelegramSignalTrader - INFO - Updated timeframe to 60 seconds
-2026-01-06 14:37:50,099 - TelegramSignalTrader - INFO - Received message: DOWN
-2026-01-06 14:37:50,100 - TelegramSignalTrader - INFO - ⚡ Executing trade: put (Catchup: False) | Brokers: 3
-2026-01-06 14:37:50,100 - TelegramSignalTrader - INFO -   > queuing broker 0
-2026-01-06 14:37:50,101 - TelegramSignalTrader - INFO -   > queuing broker 1
-2026-01-06 14:37:50,101 - TelegramSignalTrader - INFO -   > queuing broker 2
-2026-01-06 14:37:50,102 - TelegramSignalTrader - INFO -   > Fetching balance...
-2026-01-06 14:37:50,103 - TelegramSignalTrader - INFO -   > Balance raw response: 755.1
-2026-01-06 14:37:50,103 - TelegramSignalTrader - INFO -   > Placing put trade for $7.55 on AUDUSD_otc (60s)
-2026-01-06 14:37:50,105 - TelegramSignalTrader - INFO -   > Fetching balance...
-2026-01-06 14:37:50,106 - TelegramSignalTrader - INFO -   > Balance raw response: 343.62
-2026-01-06 14:37:50,106 - TelegramSignalTrader - INFO -   > Placing put trade for $3.44 on AUDUSD_otc (60s)
-2026-01-06 14:37:50,107 - TelegramSignalTrader - INFO -   > Fetching balance...
-2026-01-06 14:37:50,108 - TelegramSignalTrader - INFO -   > Balance raw response: 317.87
-2026-01-06 14:37:50,108 - TelegramSignalTrader - INFO -   > Placing put trade for $3.18 on AUDUSD_otc (60s)
-2026-01-06 14:37:50,400 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: 7f33adb8-8c8a-4a29-a27a-cfe03db7936d
-2026-01-06 14:37:50,403 - TelegramSignalTrader - INFO -    Data: {'id': '7f33adb8-8c8a-4a29-a27a-cfe03db7936d', 'openTime': '2026-01-06 11:07:51', 'closeTime': '2026-01-06 11:08:51', 'openTimestamp': 1767697671.0, 'closeTimestamp': 1767697731.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 118203353, 'requestId': 'e13a89a4-425f-47d6-9117-7e483b175cd1', 'amount': 3.44, 'profit': 2.68, 'percentProfit': 78, 'percentLoss': 100, 'openPrice': 0.69593, 'closePrice': 0.0, 'command': 1, 'asset': 'AUDUSD_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 207, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
-2026-01-06 14:37:50,439 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: f200b4e7-4e7e-4a36-ba08-e636cc402bdb
-2026-01-06 14:37:50,440 - TelegramSignalTrader - INFO -    Data: {'id': 'f200b4e7-4e7e-4a36-ba08-e636cc402bdb', 'openTime': '2026-01-06 11:07:51', 'closeTime': '2026-01-06 11:08:51', 'openTimestamp': 1767697671.0, 'closeTimestamp': 1767697731.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 106835096, 'requestId': '0e58b54e-4c40-44d5-ae67-a7522cf5efab', 'amount': 3.18, 'profit': 2.48, 'percentProfit': 78, 'percentLoss': 100, 'openPrice': 0.69593, 'closePrice': 0.0, 'command': 1, 'asset': 'AUDUSD_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 207, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
-2026-01-06 14:37:50,443 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: 84277565-5d12-40a1-9e3d-ca4dbee193b5
-2026-01-06 14:37:50,443 - TelegramSignalTrader - INFO -    Data: {'id': '84277565-5d12-40a1-9e3d-ca4dbee193b5', 'openTime': '2026-01-06 11:07:51', 'closeTime': '2026-01-06 11:08:51', 'openTimestamp': 1767697671.0, 'closeTimestamp': 1767697731.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 118330943, 'requestId': 'bf920dd4-7177-4696-aed2-0611cfb8b26a', 'amount': 7.55, 'profit': 5.89, 'percentProfit': 78, 'percentLoss': 100, 'openPrice': 0.69593, 'closePrice': 0.0, 'command': 1, 'asset': 'AUDUSD_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 207, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
-2026-01-06 14:38:07,752 - TelegramSignalTrader - INFO - Received message: DOWN🔽
-2026-01-06 14:38:07,753 - TelegramSignalTrader - INFO - ⚡ Executing trade: put (Catchup: False) | Brokers: 3
-2026-01-06 14:38:07,753 - TelegramSignalTrader - INFO -   > queuing broker 0
-2026-01-06 14:38:07,753 - TelegramSignalTrader - INFO -   > queuing broker 1
-2026-01-06 14:38:07,753 - TelegramSignalTrader - INFO -   > queuing broker 2
-2026-01-06 14:38:07,754 - TelegramSignalTrader - INFO -   > Fetching balance...
-2026-01-06 14:38:07,754 - TelegramSignalTrader - INFO -   > Balance raw response: 747.55
-2026-01-06 14:38:07,754 - TelegramSignalTrader - INFO -   > Placing put trade for $7.48 on AUDUSD_otc (60s)
-2026-01-06 14:38:07,755 - TelegramSignalTrader - INFO -   > Fetching balance...
-2026-01-06 14:38:07,755 - TelegramSignalTrader - INFO -   > Balance raw response: 340.18
-2026-01-06 14:38:07,755 - TelegramSignalTrader - INFO -   > Placing put trade for $3.40 on AUDUSD_otc (60s)
-2026-01-06 14:38:07,756 - TelegramSignalTrader - INFO -   > Fetching balance...
-2026-01-06 14:38:07,756 - TelegramSignalTrader - INFO -   > Balance raw response: 314.69
-2026-01-06 14:38:07,756 - TelegramSignalTrader - INFO -   > Placing put trade for $3.15 on AUDUSD_otc (60s)
-2026-01-06 14:38:07,976 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: e560528e-aa05-4b5c-8277-1e77228eff10
-2026-01-06 14:38:07,976 - TelegramSignalTrader - INFO -    Data: {'id': 'e560528e-aa05-4b5c-8277-1e77228eff10', 'openTime': '2026-01-06 11:08:08', 'closeTime': '2026-01-06 11:09:08', 'openTimestamp': 1767697688.0, 'closeTimestamp': 1767697748.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 118330943, 'requestId': 'f0e6f3b2-5b61-46ad-93d1-b1e70229d00c', 'amount': 7.48, 'profit': 5.83, 'percentProfit': 78, 'percentLoss': 100, 'openPrice': 0.69568, 'closePrice': 0.0, 'command': 1, 'asset': 'AUDUSD_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 548, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
-2026-01-06 14:38:07,991 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: ffe6a742-5863-46e4-ab11-2d0064931dcf
-2026-01-06 14:38:07,991 - TelegramSignalTrader - INFO -    Data: {'id': 'ffe6a742-5863-46e4-ab11-2d0064931dcf', 'openTime': '2026-01-06 11:08:08', 'closeTime': '2026-01-06 11:09:08', 'openTimestamp': 1767697688.0, 'closeTimestamp': 1767697748.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 118203353, 'requestId': '69d880da-2e21-4092-a3dc-004ad8f63bf3', 'amount': 3.4, 'profit': 2.65, 'percentProfit': 78, 'percentLoss': 100, 'openPrice': 0.69568, 'closePrice': 0.0, 'command': 1, 'asset': 'AUDUSD_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 548, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
-2026-01-06 14:38:08,010 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: 80109bb6-507c-47e8-973e-dd01703618ff
-2026-01-06 14:38:08,011 - TelegramSignalTrader - INFO -    Data: {'id': '80109bb6-507c-47e8-973e-dd01703618ff', 'openTime': '2026-01-06 11:08:08', 'closeTime': '2026-01-06 11:09:08', 'openTimestamp': 1767697688.0, 'closeTimestamp': 1767697748.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 106835096, 'requestId': '0e0fe056-3582-4cdc-b837-093a82c282f6', 'amount': 3.15, 'profit': 2.46, 'percentProfit': 78, 'percentLoss': 100, 'openPrice': 0.69568, 'closePrice': 0.0, 'command': 1, 'asset': 'AUDUSD_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 548, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
-2026-01-06 14:39:31,078 - TelegramSignalTrader - INFO - Received message: 🤩Balance after trading🤩
-2026-01-06 14:39:31,078 - TelegramSignalTrader - INFO - 🔴 TRADING SESSION ENDED via Balance Message
-2026-01-06 14:39:52,054 - TelegramSignalTrader - INFO - Added broker for SSID 42["auth",... with 1.0% trade size
+2026-01-06 18:00:50,218 - TelegramSignalTrader - INFO - 🟢 TRADING SESSION STARTED via Settings Message
+2026-01-06 18:00:50,220 - TelegramSignalTrader - INFO -    > Initial Timeframe set to 120s from settings
+2026-01-06 18:00:50,222 - TelegramSignalTrader - INFO - Updated timeframe to 120 seconds
+2026-01-06 18:00:58,863 - TelegramSignalTrader - INFO - Manual Session Override: INACTIVE 🔴
+2026-01-06 18:01:04,020 - TelegramSignalTrader - INFO - Received message: ⚙️ Settings for opening trades
+
+🏷 Time we choose 2:00 minute
+🏷 The amount of money per trade - use 1-5% of your deposit, so you can use catch-up system
+2026-01-06 18:01:04,021 - TelegramSignalTrader - INFO - 🟢 TRADING SESSION STARTED via Settings Message
+2026-01-06 18:01:04,022 - TelegramSignalTrader - INFO -    > Initial Timeframe set to 120s from settings
+2026-01-06 18:01:04,023 - TelegramSignalTrader - INFO - Updated timeframe to 120 seconds
+2026-01-06 18:01:14,827 - TelegramSignalTrader - INFO - Received message: 🤩Balance after trading🤩
+2026-01-06 18:01:14,828 - TelegramSignalTrader - INFO - 🔴 TRADING SESSION ENDED via Balance Message
+2026-01-06 18:01:23,697 - TelegramSignalTrader - INFO - Received message: AUD/USD OTC
+2026-01-06 18:01:23,699 - TelegramSignalTrader - INFO - Updated asset to AUDUSD_otc
+2026-01-06 18:01:34,364 - TelegramSignalTrader - INFO - Received message: 1:00
+2026-01-06 18:01:34,365 - TelegramSignalTrader - INFO - Updated timeframe to 60 seconds
+2026-01-06 18:01:44,108 - TelegramSignalTrader - INFO - Received message: DOWN🔽
+2026-01-06 18:01:44,109 - TelegramSignalTrader - INFO - 🚫 Session Inactive: Skipping Normal Trade
+2026-01-06 18:02:29,407 - TelegramSignalTrader - INFO - Manual Session Override: ACTIVE 🟢
+2026-01-06 18:02:31,558 - TelegramSignalTrader - INFO - Received message: DOWN🔽
+2026-01-06 18:02:31,560 - TelegramSignalTrader - INFO - ⚡ Executing trade: put (Catchup: False) | Brokers: 3
+2026-01-06 18:02:31,560 - TelegramSignalTrader - INFO -   > queuing broker 0
+2026-01-06 18:02:31,561 - TelegramSignalTrader - INFO -   > queuing broker 1
+2026-01-06 18:02:31,561 - TelegramSignalTrader - INFO -   > queuing broker 2
+2026-01-06 18:02:31,563 - TelegramSignalTrader - INFO -   > Fetching balance...
+2026-01-06 18:02:31,563 - TelegramSignalTrader - INFO -   > Balance raw response: 745.97
+2026-01-06 18:02:31,564 - TelegramSignalTrader - INFO -   > Placing put trade for $7.46 on AUDUSD_otc (60s)
+2026-01-06 18:02:31,568 - TelegramSignalTrader - INFO -   > Fetching balance...
+2026-01-06 18:02:31,568 - TelegramSignalTrader - INFO -   > Balance raw response: 339.47
+2026-01-06 18:02:31,569 - TelegramSignalTrader - INFO -   > Placing put trade for $3.39 on AUDUSD_otc (60s)
+2026-01-06 18:02:31,571 - TelegramSignalTrader - INFO -   > Fetching balance...
+2026-01-06 18:02:31,571 - TelegramSignalTrader - INFO -   > Balance raw response: 314.03
+2026-01-06 18:02:31,572 - TelegramSignalTrader - INFO -   > Placing put trade for $3.14 on AUDUSD_otc (60s)
+2026-01-06 18:02:31,849 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: 681bc1f5-683b-44e6-b2d7-54169358cd45
+2026-01-06 18:02:31,850 - TelegramSignalTrader - INFO -    Data: {'id': '681bc1f5-683b-44e6-b2d7-54169358cd45', 'openTime': '2026-01-06 14:32:31', 'closeTime': '2026-01-06 14:33:31', 'openTimestamp': 1767709951.0, 'closeTimestamp': 1767710011.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 106835096, 'requestId': '75bb6ef7-b4f8-4146-ae79-d7082b5fd092', 'amount': 3.14, 'profit': 2.89, 'percentProfit': 92, 'percentLoss': 100, 'openPrice': 0.6962, 'closePrice': 0.0, 'command': 1, 'asset': 'AUDUSD_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 689, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
+2026-01-06 18:02:31,855 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: 4fca2922-45bd-499f-8a3d-e16539b891ac
+2026-01-06 18:02:31,856 - TelegramSignalTrader - INFO -    Data: {'id': '4fca2922-45bd-499f-8a3d-e16539b891ac', 'openTime': '2026-01-06 14:32:31', 'closeTime': '2026-01-06 14:33:31', 'openTimestamp': 1767709951.0, 'closeTimestamp': 1767710011.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 118330943, 'requestId': '80dffcd6-719c-4ad3-8376-276e7a2800b5', 'amount': 7.46, 'profit': 6.86, 'percentProfit': 92, 'percentLoss': 100, 'openPrice': 0.6962, 'closePrice': 0.0, 'command': 1, 'asset': 'AUDUSD_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 689, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
+2026-01-06 18:02:31,868 - TelegramSignalTrader - INFO - ✅ Trade Placed! ID: 3b25cc91-9b28-4829-b41e-3c31a38ccb6a
+2026-01-06 18:02:31,868 - TelegramSignalTrader - INFO -    Data: {'id': '3b25cc91-9b28-4829-b41e-3c31a38ccb6a', 'openTime': '2026-01-06 14:32:31', 'closeTime': '2026-01-06 14:33:31', 'openTimestamp': 1767709951.0, 'closeTimestamp': 1767710011.0, 'refundTime': None, 'refundTimestamp': None, 'uid': 118203353, 'requestId': '613e38d7-9e50-4a54-97b3-3548c08c7138', 'amount': 3.39, 'profit': 3.12, 'percentProfit': 92, 'percentLoss': 100, 'openPrice': 0.6962, 'closePrice': 0.0, 'command': 1, 'asset': 'AUDUSD_otc', 'isDemo': 1, 'copyTicket': '', 'openMs': 689, 'closeMs': None, 'optionType': 100, 'isRollover': None, 'isCopySignal': False, 'isAI': None, 'currency': 'USD', 'amountUsd': None, 'amountUSD': None}
+2026-01-06 18:02:45,243 - TelegramSignalTrader - INFO - Received message: 🤩Balance after trading🤩
+2026-01-06 18:02:45,244 - TelegramSignalTrader - INFO - 🔴 TRADING SESSION ENDED via Balance Message

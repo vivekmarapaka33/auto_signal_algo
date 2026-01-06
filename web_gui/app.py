@@ -313,6 +313,17 @@ def trader_status():
     """Returns current signal trader status."""
     return jsonify(trader.get_status())
 
+@app.route('/api/trader/session', methods=['POST'])
+def trader_session():
+    """Manually set trading session status."""
+    data = request.get_json()
+    active = data.get('active')
+    if active is None:
+        return jsonify({'success': False, 'error': 'Missing active status'}), 400
+        
+    trader.set_trading_session(bool(active))
+    return jsonify({'success': True, 'trading_active': trader.trading_active})
+
 # SSID management helpers
 SSID_FILE = os.path.join(BASE_DIR, 'ssids.json')
 
