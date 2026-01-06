@@ -313,6 +313,7 @@ def trader_status():
     """Returns current signal trader status."""
     return jsonify(trader.get_status())
 
+
 @app.route('/api/trader/session', methods=['POST'])
 def trader_session():
     """Manually set trading session status."""
