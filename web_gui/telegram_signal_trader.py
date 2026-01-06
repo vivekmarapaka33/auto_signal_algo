@@ -43,6 +43,9 @@ class TelegramSignalTrader:
         # Store recent messages for UI
         from collections import deque
         self.last_messages = deque(maxlen=10)
+        
+        # Session Control
+        self.trading_active: bool = False
 
     def _load_assets(self) -> List[str]:
         """Loads assets.json from the current directory."""
@@ -95,6 +98,7 @@ class TelegramSignalTrader:
         return {
             'asset': self.current_asset,
             'timeframe': self.current_timeframe_sec,
+            'trading_active': self.trading_active,
             'messages': list(self.last_messages)
         }
 
@@ -267,6 +271,27 @@ class TelegramSignalTrader:
             'asset': self.current_asset,
             'timeframe': self.current_timeframe_sec
         })
+
+        # --- SESSION CONTROL ---
+        text_upper = text.upper()
+        
+        # Start Pattern
+        # "Settings for opening trades"
+        if "SETTINGS FOR OPENING TRADES" in text_upper:
+             self.trading_active = True
+             logger.info("🟢 TRADING SESSION STARTED via Settings Message")
+        
+        # Stop Pattern
+        # "Balance after trading"
+        if "BALANCE AFTER TRADING" in text_upper:
+             self.trading_active = False
+             logger.info("🔴 TRADING SESSION ENDED via Balance Message")
+             return
+
+        # Enforce Session
+        if not self.trading_active:
+             logger.info(f"⏳ Session inactive. Ignoring message: {text[:20]}...")
+             return
 
         # 4. Try Parse Catch-Up (Martingale) - PRIORITY
         if "CATCH UP" in text.upper():

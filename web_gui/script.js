@@ -208,6 +208,11 @@ async function updateTraderStatus() {
         const statusTimeframe = document.getElementById('statusTimeframe');
         if (statusAsset) statusAsset.textContent = data.asset || '--';
         if (statusTimeframe) statusTimeframe.textContent = data.timeframe ? (data.timeframe + 's') : '--';
+        const statusSession = document.getElementById('statusSession');
+        if (statusSession) {
+            statusSession.textContent = data.trading_active ? 'ACTIVE 🟢' : 'WAITING 🔴';
+            statusSession.style.color = data.trading_active ? '#4caf50' : '#f44336';
+        }
         
         // Update Messages Table
         const tbody = document.getElementById('messageList');
