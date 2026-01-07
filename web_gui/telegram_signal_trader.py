@@ -3,6 +3,7 @@ import json
 import logging
 import re
 from typing import List, Optional, Tuple, Dict, Any
+from datetime import datetime, timezone, timedelta
 
 # Configure logging
 logger = logging.getLogger("TelegramSignalTrader")
@@ -39,6 +40,7 @@ class TelegramSignalTrader:
         self.current_asset: Optional[str] = None
         self.current_timeframe_sec: Optional[int] = None
         self.in_catchup: bool = False
+        self.pending_catchup_signal: Optional[Dict] = None  # Stores recent catchup instructions
         
         # Store recent messages for UI
         from collections import deque
@@ -108,11 +110,11 @@ class TelegramSignalTrader:
         status = "ACTIVE 🟢" if active else "INACTIVE 🔴"
         logger.info(f"Manual Session Override: {status}")
 
-    async def _execute_trade(self, direction, is_catchup=False):
+    async def _execute_trade(self, direction, is_catchup=False, duration=None):
         """
         Executes trade on all brokers.
         """
-        logger.info(f"⚡ Executing trade: {direction} (Catchup: {is_catchup}) | Brokers: {len(self.brokers)}")
+        logger.info(f"⚡ Executing trade: {direction} (Catchup: {is_catchup}, Time: {duration}) | Brokers: {len(self.brokers)}")
         if not self.brokers:
             logger.error("❌ No brokers registered! Cannot trade.")
             return
@@ -120,12 +122,21 @@ class TelegramSignalTrader:
         tasks = []
         for i, broker in enumerate(self.brokers):
             logger.info(f"  > queuing broker {i}")
-            tasks.append(self._trade_broker(broker, direction, is_catchup))
+            # Use specific duration if provided, else fallback to global (handled inside _trade_broker if None passed)
+            use_duration = duration if duration else self.current_timeframe_sec
+            tasks.append(self._trade_broker(broker, direction, is_catchup, duration=use_duration))
         
         await asyncio.gather(*tasks)
 
-    async def _trade_broker(self, broker, direction, is_catchup):
+    async def _trade_broker(self, broker, direction, is_catchup, duration=None):
+        """
+        Executes a trade on a specific broker.
+        If duration is None, uses self.current_timeframe_sec (or falls back to 60).
+        """
         api = broker["api"]
+        # Use provided duration, or fallback to global state, or default 60
+        trade_time = duration if duration else (self.current_timeframe_sec or 60)
+
         try:
             # 1. Update Balance
             logger.info("  > Fetching balance...")
@@ -157,22 +168,32 @@ class TelegramSignalTrader:
             # Store base amount
             broker["base_amount"] = base_calc
             
-            if not is_catchup:
-                broker["current_amount"] = base_calc
+            # Determine Amount based on Logic
+            # "if previous trade is loss ... place catch up ... if win reset"
+            
+            last_res = broker.get('last_result', 'unknown')
+            last_amt = broker.get('last_trade_amount', base_calc) or base_calc
+            
+            # Pure State-Based Logic:
+            if last_res == 'loss':
+                next_amount = last_amt * 2
+                logger.info(f"  > Martingale Triggered (Last: LOSS): {last_amt:.2f} -> {next_amount:.2f}")
             else:
-                if broker["current_amount"] is None:
-                    broker["current_amount"] = base_calc * 2
+                next_amount = base_calc
+                if last_res == 'win':
+                    logger.info(f"  > Reset Triggered (Last: WIN). Amount: {base_calc:.2f}")
                 else:
-                    broker["current_amount"] *= 2
+                    logger.info(f"  > Base Amount (Last: {last_res}). Amount: {base_calc:.2f}")
 
-            amount = broker["current_amount"]
+            broker["current_amount"] = next_amount
+            amount = next_amount
             
             # Validation
             if amount > final_bal:
                  logger.error(f"❌ Insufficient funds: {amount} > {final_bal}")
                  return
             
-            logger.info(f"  > Placing {direction} trade for ${amount:.2f} on {self.current_asset} ({self.current_timeframe_sec}s)")
+            logger.info(f"  > Placing {direction} trade for ${amount:.2f} on {self.current_asset} ({trade_time}s)")
             
             # 3. Execute Trade
             cmd = direction.lower()
@@ -184,14 +205,14 @@ class TelegramSignalTrader:
                      trade_id, trade_data = await api.call(
                          asset=self.current_asset, 
                          amount=amount, 
-                         time=self.current_timeframe_sec, 
+                         time=trade_time, 
                          check_win=False
                      )
                  elif hasattr(api, 'buy'):
                      trade_id, trade_data = await api.buy(
                          asset=self.current_asset, 
                          amount=amount, 
-                         time=self.current_timeframe_sec, 
+                         time=trade_time, 
                          check_win=False
                      )
                  else:
@@ -202,14 +223,14 @@ class TelegramSignalTrader:
                      trade_id, trade_data = await api.put(
                          asset=self.current_asset, 
                          amount=amount, 
-                         time=self.current_timeframe_sec, 
+                         time=trade_time, 
                          check_win=False
                      )
                  elif hasattr(api, 'sell'):
                      trade_id, trade_data = await api.sell(
                          asset=self.current_asset, 
                          amount=amount, 
-                         time=self.current_timeframe_sec, 
+                         time=trade_time, 
                          check_win=False
                      )
                  else:
@@ -218,6 +239,16 @@ class TelegramSignalTrader:
             if trade_id:
                 logger.info(f"✅ Trade Placed! ID: {trade_id}")
                 logger.info(f"   Data: {trade_data}")
+                
+                # Store trade info for next time
+                broker['last_trade_amount'] = amount
+                broker['last_result'] = 'pending' # Reset result until monitored
+
+                # Start Monitoring the Result
+                asyncio.create_task(
+                    self._monitor_broker_result(broker, trade_id, trade_time)
+                )
+
             else:
                 logger.warning(f"⚠️ Trade executed but no ID returned (or failed)? Res: {trade_data}")
             
@@ -225,11 +256,65 @@ class TelegramSignalTrader:
             logger.error(f"❌ Trade failed for broker: {e}")
             import traceback
             traceback.print_exc()
+
+    async def _monitor_broker_result(self, broker, trade_id, duration):
+        """
+        Waits for trade expiry, checks win/loss, and handles catchup if needed.
+        """
+        wait_time = duration + 2  # Wait duration + small buffer
+        logger.info(f"⏳ Monitoring trade {trade_id} (wait {wait_time}s)...")
+        await asyncio.sleep(wait_time)
+        
+        api = broker["api"]
+        ssid = broker.get("ssid", "unknown")
+        
+        try:
+            # Poll for Result (up to 10s) to handle server latency
+            result = 'unknown'
+            profit = 0
+            for attempt in range(5):
+                check_data = await api.check_win(trade_id)
+                result = check_data.get('result', 'unknown')
+                profit = check_data.get('profit', 0)
+                
+                if result in ['win', 'loss']:
+                    break
+                
+                logger.debug(f"Trade result pending/unknown ({result}). Retrying...")
+                await asyncio.sleep(2)
+            
+            logger.info(f"🔎 Trade Finished [SSID: {ssid[:5]}] -> Result: {result}, Profit: {profit}")
+            
+            # Logic: Just Update State for next Trade
+            is_win = (result == 'win') or (isinstance(profit, (int, float)) and profit > 0)
+            is_loss = (result == 'loss') or (isinstance(profit, (int, float)) and profit < 0)
+            
+            # Fallback
+            if not is_win and not is_loss and result == 'loss':
+                is_loss = True
+
+            if is_win:
+                broker['last_result'] = 'win'
+                logger.info(f"  Step Result: WIN. Next catchup will RESET amount.")
+                
+            elif is_loss:
+                broker['last_result'] = 'loss'
+                logger.info(f"  Step Result: LOSS. Next catchup will DOUBLE amount.")
+                    
+            else:
+                 broker['last_result'] = 'unknown' # Tie or error
+                 logger.info(f"  Step Result: {result}. State indeterminate.")
+
+        except Exception as e:
+            logger.error(f"Error checking trade result: {e}")
+            import traceback
+            traceback.print_exc()
+
     async def handle_message(self, message_data) -> None:
         """
         Process an incoming Telegram message.
         """
-        from datetime import datetime, timezone, timedelta
+        # (Imports moved to top)
         
         text = ""
         msg_date = None
@@ -306,17 +391,16 @@ class TelegramSignalTrader:
             catchup = self._parse_catchup(text)
             if catchup:
                 direction, time_sec = catchup
-                self.current_timeframe_sec = time_sec
-                self.in_catchup = True
-                
-                logger.info(f"Catch-up signal! Direction: {direction}, Time: {time_sec}s")
+                # Execute IMMEDIATELY as a Conditional Trade
+                # is_catchup=True signals _trade_broker to check 'last_result' and decide amount
                 if self.trading_active:
-                    await self._execute_trade(direction, is_catchup=True)
+                    await self._execute_trade(direction, is_catchup=True, duration=time_sec)
                 else:
                     logger.info("🚫 Session Inactive: Skipping Catch-up Trade")
             else:
                 logger.warning("Message contained 'CATCH UP' but failed to parse direction.")
             return
+
 
         # 5. RESULT/STATUS FILTER (Prevent False Trades)
         # Avoid triggering "UP" from "UP WON" or "AUD/USD RESULT"
@@ -388,8 +472,8 @@ class TelegramSignalTrader:
             except ValueError:
                 pass
 
-        # 2. Check for explicit Minutes (e.g. "2 min", "5 minutes", "1M")
-        match_min = re.search(r"\b(\d+)\s*(MINUTES?|MIN|M)\b", msg)
+        # 2. Check for explicit Minutes (e.g. "2 min", "3 MINS", "5 minutes", "1M")
+        match_min = re.search(r"\b(\d+)\s*(MINUTES?|MINS?|M)\b", msg)
         if match_min:
             try:
                 val = int(match_min.group(1))
@@ -418,13 +502,16 @@ class TelegramSignalTrader:
         return None
 
     def _parse_direction(self, text: str) -> Optional[str]:
-        """Parses direction UP/DOWN."""
+        """Parses direction UP/DOWN using strict word boundaries."""
         t = text.upper()
         
-        # Simple inclusion check as requested (not strict)
-        if "UP" in t or "🔼" in t:
+        # Regex for strict UP/DOWN to avoid partial matches
+        # Matches "UP", "CALL", "🔼"
+        if re.search(r'\b(UP|CALL)\b|🔼', t):
             return "call"
-        if "DOWN" in t or "🔽" in t:
+        
+        # Matches "DOWN", "PUT", "🔽"
+        if re.search(r'\b(DOWN|PUT)\b|🔽', t):
             return "put"
             
         return None
@@ -434,21 +521,20 @@ class TelegramSignalTrader:
         if "CATCH UP" not in text.upper():
             return None
             
-        # Remove "CATCH UP" and parse the rest
-        # Example: "CATCH UP 2 min UP"
-        remaining = text.upper().replace("CATCH UP", "").strip()
+        # Remove "CATCH UP" (case insensitive) and parse the rest
+        # Example: "CATCH UP 3 min DOWN" -> " 3 min DOWN"
+        remaining = re.sub(r'CATCH UP', '', text, flags=re.IGNORECASE).strip()
         
-        # Find direction
+        # Find direction in the remaining text
         direction = self._parse_direction(remaining)
         if not direction:
             return None
             
-        # Find timeframe in the *original* text strings (handle "2 min")
-        # simpler to just pass the remaining text to _parse_timeframe
+        # Find timeframe in the remaining text
         time_sec = self._parse_timeframe(remaining)
-        if not time_sec:
-            # Fallback if timeframe not found in catchup message? 
-            # Prompt says "Update timeframe from message". Implies it MUST be there.
-            return None
-            
+        
+        # If no time specified in catchup msg, we might return None.
+        # But for safety, if parsed direction is valid, we return it.
+        # The caller _execute_trade handles None duration by using current defaults.
+        
         return (direction, time_sec)
