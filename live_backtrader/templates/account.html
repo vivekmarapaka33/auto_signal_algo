@@ -1,0 +1,129 @@
+{% extends "layout.html" %}
+
+{% block title %}Account{% endblock %}
+
+{% block header %}
+<h1 class="text-xl font-bold text-white">Account Settings</h1>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <div class="bg-gray-800 rounded-xl border border-gray-700 p-6">
+        <h3 class="text-lg font-bold text-white mb-4">Pocket Option Configuration</h3>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Session SSID</label>
+                <input type="password" id="ssid-input" class="w-full bg-gray-900 border border-gray-600 rounded-lg py-2 px-3 text-white focus:ring-primary focus:border-primary" placeholder="Start with 42[&quot;auth&quot;...]">
+                <div id="connection-status" class="text-xs mt-1 text-gray-500">Checking status...</div>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center">
+                    <input type="radio" name="mode" class="text-primary bg-gray-700 border-gray-600 focus:ring-primary h-4 w-4">
+                    <label class="ml-2 text-sm text-gray-300">Demo Account</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="radio" name="mode" class="text-primary bg-gray-700 border-gray-600 focus:ring-primary h-4 w-4">
+                    <label class="ml-2 text-sm text-gray-300">Live Account</label>
+                </div>
+            </div>
+            
+            <button onclick="saveSSID()" class="bg-accent hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                Connect & Update
+            </button>
+            <div id="save-status" class="text-sm mt-2 font-bold"></div>
+        </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-xl border border-gray-700 p-6">
+        <h3 class="text-lg font-bold text-white mb-4">System Status</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-gray-700/50 p-3 rounded-lg">
+                <div class="text-xs text-gray-400">WebSocket Latency</div>
+                <div class="text-lg font-mono text-white">45ms</div>
+            </div>
+            <div class="bg-gray-700/50 p-3 rounded-lg">
+                <div class="text-xs text-gray-400">Data Integrity</div>
+                <div class="text-lg font-bold text-green-400">100%</div>
+            </div>
+            <div class="bg-gray-700/50 p-3 rounded-lg col-span-2">
+                 <div class="text-xs text-gray-400">Current Balance</div>
+                 <div id="current-balance" class="text-2xl font-bold text-accent">Loading...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function saveSSID() {
+    const input = document.getElementById('ssid-input');
+    const ssid = input.value;
+    const status = document.getElementById('save-status');
+    
+    status.innerText = "Saving...";
+    status.className = "text-sm mt-2 text-yellow-500";
+    
+    try {
+        const res = await fetch('/api/v1/account/ssid', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ssid: ssid})
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            status.innerText = `Success! Balance: $${data.balance}. Redirecting to Dashboard...`;
+            status.className = "text-sm mt-2 text-green-500 font-bold";
+            setTimeout(() => {
+                window.location.href = '/'; 
+            }, 2000);
+        } else {
+             status.innerText = "Error: " + data.detail;
+             status.className = "text-sm mt-2 text-red-500";
+        }
+    } catch(e) {
+        status.innerText = "Network Error";
+        status.className = "text-sm mt-2 text-red-500";
+    }
+}
+</script>
+<script>
+    // Auto-fetch status on load
+    document.addEventListener('DOMContentLoaded', async () => {
+        const ssidInput = document.getElementById('ssid-input');
+        const statusDiv = document.getElementById('connection-status');
+        const balanceDiv = document.getElementById('current-balance');
+        
+        // 1. Check SSID Config
+        try {
+            const res = await fetch('/api/v1/account/ssid');
+            const data = await res.json();
+            if (data.configured) {
+                statusDiv.innerHTML = `<span class="text-green-500">● Configured</span> (${data.ssid_masked})`;
+                ssidInput.placeholder = "Update SSID (leave empty to keep current)";
+            } else {
+                statusDiv.innerText = "Not Configured";
+                balanceDiv.innerText = "$ -.--";
+                return; // Don't fetch balance if not configured
+            }
+        } catch(e) {
+            console.error(e);
+        }
+
+        // 2. Fetch Balance
+        try {
+            const res = await fetch('/api/v1/account/balance');
+            if (res.ok) {
+                const data = await res.json();
+                balanceDiv.innerText = `$${data.balance.toFixed(2)}`;
+            } else {
+                balanceDiv.innerText = "Error fetching balance";
+                balanceDiv.classList.add('text-red-400');
+            }
+        } catch (e) {
+             balanceDiv.innerText = "Connection Error";
+        }
+    });
+</script>
+{% endblock %}

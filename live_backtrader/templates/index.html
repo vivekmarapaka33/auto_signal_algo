@@ -1,0 +1,261 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard - Live Trading{% endblock %}
+
+{% block header %}
+<div class="flex items-center space-x-4">
+    <select id="asset-selector" class="bg-gray-700 border-none rounded-lg text-sm focus:ring-primary text-white py-1 px-3">
+        <option value="EURUSD_otc">EURUSD OTC</option>
+        <option value="GBPUSD_otc">GBPUSD OTC</option>
+        <option value="USDJPY_otc">USDJPY OTC</option>
+    </select>
+    
+    <div class="flex bg-gray-700 rounded-lg p-1 space-x-1">
+        <button class="px-3 py-0.5 rounded text-sm font-medium bg-gray-600 text-white shadow-sm transition-all" data-tf="60">M1</button>
+        <button class="px-3 py-0.5 rounded text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-600 transition-all" data-tf="120">M2</button>
+        <button class="px-3 py-0.5 rounded text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-600 transition-all" data-tf="300">M5</button>
+    </div>
+
+    <div class="flex items-center space-x-2 ml-4">
+        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+        <span class="text-xs text-gray-400 uppercase tracking-wider">Market Open</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-12 gap-6 h-full">
+    <!-- Chart Section -->
+    <div class="col-span-9 flex flex-col h-full space-y-4">
+        <div class="flex-1 bg-gray-800 rounded-xl border border-gray-700 shadow-xl overflow-hidden relative" id="chart-container">
+            <!-- Chart renders here -->
+            <div class="absolute top-4 left-4 z-10 opacity-50 hover:opacity-100 transition-opacity">
+                <h3 class="text-2xl font-bold tracking-tight text-white/20 select-none">EURUSD OTC</h3>
+            </div>
+        </div>
+        
+        <!-- Win/Loss Metrics Strip -->
+        <div class="h-24 bg-gray-800 rounded-xl border border-gray-700 p-4 flex items-center justify-between">
+            <div class="flex space-x-8">
+                <div>
+                    <div class="text-xs text-gray-400 uppercase">Win Rate</div>
+                    <div class="text-2xl font-bold text-accent">78.5%</div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-400 uppercase">Profitable Trades</div>
+                    <div class="text-2xl font-bold text-white">142</div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-400 uppercase">Loss Trades</div>
+                    <div class="text-2xl font-bold text-danger">39</div>
+                </div>
+            </div>
+            
+            <div class="h-full w-px bg-gray-700"></div>
+            
+            <!-- Balance Card Added -->
+            <div class="px-4">
+                 <div class="text-xs text-gray-400 uppercase">Live Balance</div>
+                 <div id="dash-balance" class="text-2xl font-bold text-accent">...</div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                 <button class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors border border-gray-600">
+                    Export CSV
+                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel: Signals & Controls -->
+    <div class="col-span-3 flex flex-col h-full space-y-4">
+        <!-- Live Signals Feed -->
+        <div class="flex-1 bg-gray-800 rounded-xl border border-gray-700 flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="font-bold text-gray-100">Live Signals</h3>
+                <span class="px-2 py-0.5 rounded text-xs bg-green-900/50 text-green-400 border border-green-800">Active</span>
+            </div>
+            <div class="flex-1 overflow-y-auto p-2 space-y-2" id="signals-list">
+                <!-- Signal Item Example -->
+                <div class="p-3 bg-gray-700/50 rounded-lg border border-gray-600/50 flex items-center justify-between hover:bg-gray-700 transition-colors cursor-pointer group">
+                    <div>
+                        <div class="text-xs text-gray-400">14:45:22</div>
+                        <div class="font-bold text-sm text-white">EURUSD</div>
+                    </div>
+                    <div class="flex flex-col items-end">
+                        <span class="text-accent font-bold text-sm flex items-center">
+                            CALL <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                        </span>
+                        <span class="text-xs text-gray-500">M1 Expiry</span>
+                    </div>
+                </div>
+                
+                <div class="p-3 bg-gray-700/50 rounded-lg border border-gray-600/50 flex items-center justify-between hover:bg-gray-700 transition-colors cursor-pointer">
+                    <div>
+                        <div class="text-xs text-gray-400">14:42:10</div>
+                        <div class="font-bold text-sm text-white">GBPUSD</div>
+                    </div>
+                    <div class="flex flex-col items-end">
+                        <span class="text-danger font-bold text-sm flex items-center">
+                            PUT <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                        </span>
+                        <span class="text-xs text-gray-500">M1 Expiry</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="h-auto bg-gray-800 rounded-xl border border-gray-700 p-4">
+            <h3 class="font-bold text-gray-100 mb-4 text-sm uppercase tracking-wider">Quick Actions</h3>
+            
+            <div class="space-y-3">
+                <button class="w-full bg-accent hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-green-900/20 transition-all flex justify-center items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Start Strategy
+                </button>
+                
+                <button class="w-full bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold py-3 px-4 rounded-lg border border-gray-600 transition-all flex justify-center items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Pause Execution
+                </button>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t border-gray-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-400">Live Trading</span>
+                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                        <label for="toggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-600 cursor-pointer"></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize Chart
+    const chartContainer = document.getElementById('chart-container');
+    const chart = LightweightCharts.createChart(chartContainer, {
+        layout: {
+            background: { type: 'solid', color: '#1f2937' },
+            textColor: '#d1d5db',
+        },
+        grid: {
+            vertLines: { color: '#374151' },
+            horzLines: { color: '#374151' },
+        },
+        rightPriceScale: {
+            borderColor: '#374151',
+        },
+        timeScale: {
+            borderColor: '#374151',
+            timeVisible: true,
+            secondsVisible: true,
+        },
+    });
+
+    const candleSeries = chart.addCandlestickSeries({
+        upColor: '#10b981',
+        downColor: '#ef4444',
+        borderDownColor: '#ef4444',
+        borderUpColor: '#10b981',
+        wickDownColor: '#ef4444',
+        wickUpColor: '#10b981',
+    });
+
+    // Initial Data Placeholder
+    // candleSeries.setData([...]);
+    
+    // WebSocket Connection
+    let ws = null;
+    const assetSelector = document.getElementById('asset-selector');
+    
+    function connectWS() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/api/v1/ws/${Date.now()}`;
+        
+        ws = new WebSocket(wsUrl);
+        
+        ws.onopen = () => {
+            console.log('Connected to WS');
+            subscribeToAsset(assetSelector.value);
+        };
+        
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'history') {
+                     // Set initial data
+                     candleSeries.setData(data.data);
+                     // Fit content
+                     chart.timeScale().fitContent();
+                }
+                else if (data.type === 'candle') {
+                    // Check if chart expects specific format (seconds vs ms)
+                    // Lightweight charts defaults to seconds for 'time'
+                    const candle = data.data;
+                    
+                    // Simple validation
+                    if(candle.time && candle.close) {
+                         candleSeries.update(candle);
+                         // Also update title if needed
+                    }
+                }
+            } catch(e) {
+                console.error("WS Parse Error", e);
+            }
+        };
+        
+        ws.onclose = () => {
+            console.log('WS Disconnected. Reconnecting...');
+            setTimeout(connectWS, 3000);
+        };
+    }
+    
+    function subscribeToAsset(asset) {
+        if(ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                action: 'subscribe',
+                asset: asset
+            }));
+        }
+    }
+    
+    assetSelector.addEventListener('change', (e) => {
+        // Clear chart or reload history here if needed
+        subscribeToAsset(e.target.value);
+    });
+    
+    // Auto Resize
+    window.addEventListener('resize', () => {
+        chart.resize(chartContainer.clientWidth, chartContainer.clientHeight);
+    });
+    
+    // Start
+    connectWS();
+    
+    // Fetch Balance logic for dashboard
+    async function updateDashBalance() {
+        const balEl = document.getElementById('dash-balance');
+        try {
+             const res = await fetch('/api/v1/account/balance');
+             if(res.ok) {
+                 const d = await res.json();
+                 balEl.innerText = `$${d.balance.toFixed(2)}`;
+             } else {
+                 balEl.innerText = "Error";
+             }
+        } catch(e) {
+            balEl.innerText = "Offline";
+        }
+    }
+    
+    updateDashBalance();
+    // Poll balance every 30s
+    setInterval(updateDashBalance, 30000);
+</script>
+{% endblock %}

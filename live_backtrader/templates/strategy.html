@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategy Builder - Auto Signal Algo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.30.1/min/vs/loader.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200 h-screen flex flex-col overflow-hidden">
+
+    <!-- Navigation -->
+    <nav class="border-b border-slate-700 bg-slate-900/50 backdrop-blur-md px-6 py-3 flex items-center justify-between z-10 relative">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <span class="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">Strategy Builder</span>
+        </div>
+        <div class="flex items-center gap-6 text-sm font-medium text-slate-400">
+            <a href="/" class="hover:text-white transition-colors">Home</a>
+             <a href="/strategy" class="text-white">Strategy</a>
+            <a href="/live" class="hover:text-white transition-colors">Live Dashboard</a>
+        </div>
+        <div id="connectionStatus" class="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-slate-800/50 border border-slate-700 text-slate-400">
+            <span class="w-2 h-2 rounded-full bg-slate-500"></span> Ready
+        </div>
+    </nav>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar: Configuration -->
+        <aside class="w-80 bg-slate-900 border-r border-slate-800 flex flex-col p-6 overflow-y-auto">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Configuration</h3>
+            
+                <div class="space-y-6">
+                <!-- Data Feed Settings -->
+                <div class="space-y-4">
+                     <label class="block text-xs font-medium text-slate-500 uppercase">Strategy Management</label>
+                     <div class="space-y-2">
+                        <input type="text" id="strategyNameInput" placeholder="Strategy Name" class="w-full bg-slate-800 text-white text-sm rounded-lg px-3 py-2 border border-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                        <select id="loadStrategySelect" class="w-full bg-slate-800 text-white text-sm rounded-lg px-3 py-2 border border-slate-700 outline-none">
+                            <option value="">-- Load Strategy --</option>
+                        </select>
+                        <button id="loadStrategyBtn" class="w-full py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs text-white transition-colors">
+                            Load Selected
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-4 border-t border-slate-800">
+                    <label class="block text-xs font-medium text-slate-500 uppercase">Forward Test Feed</label>
+                    <div>
+                        <span class="text-xs text-slate-400 block mb-1">Asset</span>
+                        <select id="assetSelect" class="w-full bg-slate-800 text-white text-sm rounded-lg px-3 py-2 border border-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="EURUSD_otc">EURUSD_otc</option>
+                            <option value="GBPUSD_otc">GBPUSD_otc</option>
+                            <option value="USDJPY_otc">USDJPY_otc</option>
+                            <option value="AUDCAD_otc">AUDCAD_otc</option>
+                            <option value="NZDUSD_otc">NZDUSD_otc</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400 block mb-1">Timeframe</span>
+                        <select id="timeframeSelect" class="w-full bg-slate-800 text-white text-sm rounded-lg px-3 py-2 border border-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="5">5 Seconds</option>
+                            <option value="60" selected>1 Minute</option>
+                            <option value="120">2 Minutes</option>
+                            <option value="300">5 Minutes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Fund Management -->
+                <div class="space-y-4 pt-4 border-t border-slate-800">
+                    <label class="block text-xs font-medium text-slate-500 uppercase">Fund Management</label>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs text-slate-400">Base Bet (% of Fund)</span>
+                            <span class="text-xs text-blue-400 font-mono" id="baseBetDisplay">1.0%</span>
+                        </div>
+                        <input type="range" id="baseBetInput" min="0.1" max="10" step="0.1" value="1.0" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs text-slate-400">Martingale Multiplier</span>
+                            <span class="text-xs text-blue-400 font-mono" id="martingaleDisplay">2.0x</span>
+                        </div>
+                        <input type="range" id="martingaleInput" min="1" max="5" step="0.1" value="2.0" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                     <div class="flex items-start gap-2 p-3 rounded bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 mt-2">
+                        <svg class="w-4 h-4 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <p>Logic: Reset to Base Bet on Win. Multiply current bet by Factor on Loss.</p>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="pt-6 border-t border-slate-800 space-y-3">
+                     <button id="saveBtn" class="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium transition-colors border border-slate-700 flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                        Save Strategy
+                    </button>
+                    <button id="runTestBtn" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-sm font-medium shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 group">
+                        <svg class="w-4 h-4 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Start Forward Test
+                    </button>
+                     <p id="statusMsg" class="text-center text-xs text-slate-500 h-4"></p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content: Editor & Logs -->
+        <main class="flex-1 flex flex-col bg-slate-950/50 relative">
+            <!-- Loading Overlay -->
+            <div id="loadingOverlay" class="absolute inset-0 bg-slate-900/80 z-50 flex items-center justify-center hidden">
+                <div class="flex flex-col items-center">
+                    <div class="w-8 h-8 border-2 border-slate-600 border-t-emerald-500 rounded-full animate-spin mb-3"></div>
+                    <span class="text-slate-400 text-sm font-medium">Processing...</span>
+                </div>
+            </div>
+
+            <!-- Editor -->
+            <div class="flex-1 relative" id="editorContainer"></div>
+            
+            <!-- Bottom Panel: Output/Logs -->
+            <div class="h-48 bg-slate-900 border-t border-slate-800 flex flex-col">
+                <div class="px-4 py-2 border-b border-slate-800 bg-slate-800/50 flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Forward Test Logs</span>
+                    <button class="text-xs text-slate-500 hover:text-white" onclick="document.getElementById('logs').innerHTML = ''">Clear</button>
+                </div>
+                <div id="logs" class="flex-1 p-4 overflow-y-auto font-mono text-xs space-y-1">
+                    <div class="text-slate-500 italic pb-2">Ready to run forward test...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Init Monaco Editor
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.30.1/min/vs' }});
+        
+        let editor;
+        
+        require(['vs/editor/editor.main'], function() {
+            editor = monaco.editor.create(document.getElementById('editorContainer'), {
+                value: `class MyStrategy:\n    def next(self, candle):\n        # Available: candle['open', 'high', 'low', 'close', 'time']\n        # Actions: return "CALL", "PUT", or None\n        \n        close = candle['close']\n        open_ = candle['open']\n        \n        # Example: Green candle -> CALL\n        if close > open_:\n            return "CALL"\n        elif close < open_:\n            return "PUT"\n        \n        return None`,
+                language: 'python',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false },
+                fontSize: 13,
+                fontFamily: 'JetBrains Mono, Menlo, monospace'
+            });
+        });
+
+        // UI Controls logic
+        const baseBetInput = document.getElementById('baseBetInput');
+        const baseBetDisplay = document.getElementById('baseBetDisplay');
+        baseBetInput.addEventListener('input', (e) => baseBetDisplay.innerText = e.target.value + '%');
+
+        const martingaleInput = document.getElementById('martingaleInput');
+        const martingaleDisplay = document.getElementById('martingaleDisplay');
+        martingaleInput.addEventListener('input', (e) => martingaleDisplay.innerText = e.target.value + 'x');
+
+        const statusMsg = document.getElementById('statusMsg');
+        function setStatus(msg, type='info') {
+            statusMsg.innerText = msg;
+            statusMsg.className = `text-center text-xs h-4 ${type === 'error' ? 'text-red-500' : type === 'success' ? 'text-emerald-500' : 'text-slate-500'}`;
+            setTimeout(() => statusMsg.innerText = '', 3000);
+        }
+
+        // Save Strategy
+        // Load Strategies List
+        async function loadStrategies() {
+            try {
+                const res = await fetch('/api/strategy/list');
+                const strategies = await res.json();
+                const select = document.getElementById('loadStrategySelect');
+                select.innerHTML = '<option value="">-- Load Strategy --</option>';
+                strategies.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.innerText = s.name;
+                    select.appendChild(opt);
+                });
+            } catch(e) { console.error("Failed to load strategies", e); }
+        }
+        loadStrategies();
+
+        // Load Strategy Button
+        document.getElementById('loadStrategyBtn').addEventListener('click', async () => {
+            const id = document.getElementById('loadStrategySelect').value;
+            if(!id) return setStatus("Select a strategy first", 'error');
+            
+            try {
+                const res = await fetch(`/api/strategy/${id}`);
+                const data = await res.json();
+                if(data.code && editor) {
+                    editor.setValue(data.code);
+                    document.getElementById('strategyNameInput').value = data.name;
+                    setStatus(`Loaded "${data.name}"`, 'success');
+                }
+            } catch(e) {
+                setStatus("Load Failed", 'error');
+            }
+        });
+
+        // Save Strategy
+        document.getElementById('saveBtn').addEventListener('click', async () => {
+            const code = editor.getValue();
+            const name = document.getElementById('strategyNameInput').value;
+            
+            if(!name) return setStatus("Please enter a strategy name", 'error');
+
+            try {
+                const res = await fetch('/api/strategy/save', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ name: name, code: code })
+                });
+                
+                if (!res.ok) {
+                    const errData = await res.json();
+                    console.error("Save Error:", errData);
+                    let msg = "Save Failed";
+                    if (errData.detail) {
+                        // Pydantic validation error format
+                         if (Array.isArray(errData.detail)) {
+                             msg += ": " + errData.detail.map(e => e.msg).join(", ");
+                         } else {
+                             msg += ": " + errData.detail;
+                         }
+                    } else if (errData.error) {
+                        msg += ": " + errData.error;
+                    }
+                    return setStatus(msg, 'error');
+                }
+
+                const data = await res.json();
+                if(data.success) {
+                    setStatus("Strategy Saved!", 'success');
+                    loadStrategies(); // Refresh list
+                }
+                else setStatus("Save Failed: " + data.error, 'error');
+            } catch(e) {
+                console.error(e);
+                setStatus("Network Error", 'error');
+            }
+        });
+
+        // Run Forward Test Logic
+        // We will use existing WebSocket but with a new command
+        let ws;
+        function connect() {
+            const WS_URL = "ws://" + window.location.host + "/ws/live";
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                const badge = document.getElementById('connectionStatus');
+                badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Connected';
+                badge.classList.replace('text-slate-400', 'text-emerald-400');
+            };
+            
+            ws.onclose = () => setTimeout(connect, 3000);
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'log') {
+                    const logs = document.getElementById('logs');
+                    const div = document.createElement('div');
+                    div.className = data.color || 'text-slate-300';
+                    div.innerText = `> ${data.message}`;
+                    logs.appendChild(div);
+                    logs.scrollTop = logs.scrollHeight;
+                }
+            };
+        }
+        
+        connect();
+
+        document.getElementById('runTestBtn').addEventListener('click', () => {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return setStatus("WebSocket not connected", 'error');
+
+            const config = {
+                command: 'start_forward_test',
+                asset: document.getElementById('assetSelect').value,
+                timeframe: parseInt(document.getElementById('timeframeSelect').value),
+                risk_percent: parseFloat(baseBetInput.value),
+                martingale_multiplier: parseFloat(martingaleInput.value),
+                code: editor.getValue() // Send code directly to ensure latest version runs
+            };
+            
+            ws.send(JSON.stringify(config));
+            setStatus("Forward Test Started...", 'success');
+            
+            // Visual feedback
+            const btn = document.getElementById('runTestBtn');
+            btn.innerHTML = `<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Running...`;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+        });
+
+    </script>
+</body>
+</html>

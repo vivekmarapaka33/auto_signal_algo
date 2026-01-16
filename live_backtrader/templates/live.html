@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Live Platform - Auto Signal Algo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lightweight Charts -->
+    <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
+    <!-- Monaco Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.30.1/min/vs/loader.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform: translateZ(0); /* GPU acceleration for glass effect */
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-danger:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="glass-panel z-20 p-3 flex justify-between items-center border-b border-gray-700 shadow-md">
+        <div class="flex items-center gap-3">
+            <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <h1 class="text-lg font-bold tracking-tight text-white">Unified Platform</h1>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <div id="connectionStatus" class="flex items-center gap-2 text-xs font-medium px-3 py-1 bg-slate-800 rounded-full border border-slate-700 text-yellow-500">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                </span>
+                Connecting...
+            </div>
+            
+            <div class="h-6 w-px bg-slate-700 mx-2"></div>
+
+            <div class="flex items-center gap-2">
+                <select id="modeSelect" class="bg-slate-800 text-white text-xs rounded-lg px-2 py-1.5 border border-slate-600 focus:ring-1 focus:ring-blue-500 outline-none">
+                    <option value="SIMULATION">Simulation (Backtest)</option>
+                    <option value="FORWARD_TEST" selected>Forward Test</option>
+                    <option value="PUBLISH">Publish (Live)</option>
+                </select>
+                <div class="h-6 w-px bg-slate-700 mx-1"></div>
+                <select id="assetSelect" class="bg-slate-800 text-white text-xs rounded-lg px-2 py-1.5 border border-slate-600 focus:ring-1 focus:ring-blue-500 outline-none w-32">
+                    <option value="AEDCNY_otc">AED/CNY OTC</option>
+                    <option value="AUDCAD_otc" selected>AUD/CAD OTC</option>
+                    <option value="AUDUSD_otc">AUD/USD OTC</option>
+                    <option value="CADJPY_otc">CAD/JPY OTC</option>
+                    <option value="CHFJPY_otc">CHF/JPY OTC</option>
+                    <option value="EURGBP_otc">EUR/GBP OTC</option>
+                    <option value="EURJPY_otc">EUR/JPY OTC</option>
+                    <option value="EURUSD_otc">EUR/USD OTC</option>
+                    <option value="NGNUSD_otc">NGN/USD OTC</option>
+                    <option value="TNDUSD_otc">TND/USD OTC</option>
+                    <option value="USDBDT_otc">USD/BDT OTC</option>
+                    <option value="USDBRL_otc">USD/BRL OTC</option>
+                    <option value="USDEGP_otc">USD/EGP OTC</option>
+                    <option value="USDINR_otc">USD/INR OTC</option>
+                    <option value="USDRUB_otc">USD/RUB OTC</option>
+                    <option value="YERUSD_otc">YER/USD OTC</option>
+                    <option value="CHFNOK_otc">CHF/NOK OTC</option>
+                    <option value="AUDNZD_otc">AUD/NZD OTC</option>
+                    <option value="CHFJPY">CHF/JPY</option>
+                    <option value="EURNZD_otc">EUR/NZD OTC</option>
+                    <option value="EURUSD">EUR/USD</option>
+                    <option value="GBPAUD_otc">GBP/AUD OTC</option>
+                    <option value="EURRUB_otc">EUR/RUB OTC</option>
+                    <option value="UAHUSD_otc">UAH/USD OTC</option>
+                    <option value="USDSGD_otc">USD/SGD OTC</option>
+                    <option value="AUDJPY_otc">AUD/JPY OTC</option>
+                    <option value="EURJPY">EUR/JPY</option>
+                    <option value="USDCAD_otc">USD/CAD OTC</option>
+                    <option value="USDMXN_otc">USD/MXN OTC</option>
+                    <option value="GBPCAD">GBP/CAD</option>
+                    <option value="GBPJPY">GBP/JPY</option>
+                    <option value="QARCNY_otc">QAR/CNY OTC</option>
+                    <option value="USDCHF">USD/CHF</option>
+                    <option value="EURHUF_otc">EUR/HUF OTC</option>
+                    <option value="KESUSD_otc">KES/USD OTC</option>
+                    <option value="EURAUD">EUR/AUD</option>
+                    <option value="USDDZD_otc">USD/DZD OTC</option>
+                    <option value="USDVND_otc">USD/VND OTC</option>
+                    <option value="EURCAD">EUR/CAD</option>
+                    <option value="USDCOP_otc">USD/COP OTC</option>
+                    <option value="USDJPY_otc">USD/JPY OTC</option>
+                    <option value="USDTHB_otc">USD/THB OTC</option>
+                    <option value="AUDJPY">AUD/JPY</option>
+                    <option value="CADJPY">CAD/JPY</option>
+                    <option value="EURCHF">EUR/CHF</option>
+                    <option value="USDIDR_otc">USD/IDR OTC</option>
+                    <option value="USDPHP_otc">USD/PHP OTC</option>
+                    <option value="GBPCHF">GBP/CHF</option>
+                    <option value="AUDCAD">AUD/CAD</option>
+                    <option value="SARCNY_otc">SAR/CNY OTC</option>
+                    <option value="USDJPY">USD/JPY</option>
+                    <option value="EURGBP">EUR/GBP</option>
+                    <option value="NZDJPY_otc">NZD/JPY OTC</option>
+                    <option value="AUDUSD">AUD/USD</option>
+                    <option value="USDCHF_otc">USD/CHF OTC</option>
+                    <option value="ZARUSD_otc">ZAR/USD OTC</option>
+                    <option value="AUDCHF">AUD/CHF</option>
+                    <option value="JODCNY_otc">JOD/CNY OTC</option>
+                    <option value="EURTRY_otc">EUR/TRY OTC</option>
+                    <option value="LBPUSD_otc">LBP/USD OTC</option>
+                    <option value="OMRCNY_otc">OMR/CNY OTC</option>
+                    <option value="USDCAD">USD/CAD</option>
+                    <option value="CADCHF_otc">CAD/CHF OTC</option>
+                    <option value="EURCHF_otc">EUR/CHF OTC</option>
+                    <option value="GBPJPY_otc">GBP/JPY OTC</option>
+                    <option value="MADUSD_otc">MAD/USD OTC</option>
+                    <option value="USDMYR_otc">USD/MYR OTC</option>
+                    <option value="GBPAUD">GBP/AUD</option>
+                    <option value="USDCLP_otc">USD/CLP OTC</option>
+                    <option value="USDPKR_otc">USD/PKR OTC</option>
+                    <option value="NZDUSD_otc">NZD/USD OTC</option>
+                    <option value="GBPUSD">GBP/USD</option>
+                    <option value="GBPUSD_otc">GBP/USD OTC</option>
+                    <option value="USDARS_otc">USD/ARS OTC</option>
+                    <option value="CADCHF">CAD/CHF</option>
+                    <option value="USDCNH_otc">USD/CNH OTC</option>
+                    <option value="BHDCNY_otc">BHD/CNY OTC</option>
+                </select>
+                <select id="timeframeSelect" class="bg-slate-800 text-white text-xs rounded-lg px-2 py-1.5 border border-slate-600 focus:ring-1 focus:ring-blue-500 outline-none">
+                    <option value="5">5s (Candle)</option>
+                    <option value="60" selected>1m (Candle)</option>
+                    <option value="120">2m (Candle)</option>
+                    <option value="300">5m (Candle)</option>
+                </select>
+                <select id="expirySelect" class="bg-slate-800 text-white text-xs rounded-lg px-2 py-1.5 border border-slate-600 focus:ring-1 focus:ring-blue-500 outline-none">
+                    <option value="30">30s Expiry</option>
+                    <option value="60" selected>1m Expiry</option>
+                    <option value="120">2m Expiry</option>
+                    <option value="180">3m Expiry</option>
+                    <option value="300">5m Expiry</option>
+                </select>
+                <button id="startBtn" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-lg flex items-center gap-2">
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    START ENGINE
+                </button>
+                <button id="stopBtn" class="btn-danger px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-lg hidden flex items-center gap-2">
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+                    STOP
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- Sidebar: Config & Stats -->
+        <aside class="w-72 glass-panel border-r border-gray-700 flex flex-col z-10">
+            <!-- Connection Settings (Removed, moved to modal) -->
+
+
+            <!-- Stats -->
+            <div class="p-4 border-b border-gray-700 bg-slate-800/30">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Live Stats</h2>
+                    <button id="reconfigSSIDBtn" class="text-[10px] text-blue-400 hover:text-blue-300 underline" title="Change SSID">
+                        Re-Config
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <div class="bg-slate-800/80 p-2 rounded border border-slate-700">
+                        <div class="text-[10px] text-slate-400">Balance</div>
+                        <div class="text-sm font-bold text-emerald-400 font-mono" id="balance">$1,000.00</div>
+                    </div>
+                    <div class="bg-slate-800/80 p-2 rounded border border-slate-700">
+                        <div class="text-[10px] text-slate-400">Win Rate</div>
+                        <div class="text-sm font-bold text-blue-400 font-mono" id="winRate">0%</div>
+                    </div>
+                </div>
+                 <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-slate-800/80 p-2 rounded border border-slate-700">
+                        <div class="text-[10px] text-slate-400">Trades</div>
+                        <div class="text-sm font-bold text-white font-mono" id="totalTrades">0</div>
+                    </div>
+                    <div class="bg-slate-800/80 p-2 rounded border border-slate-700">
+                        <div class="text-[10px] text-slate-400">Next Trade</div>
+                        <div class="text-sm font-bold text-yellow-400 font-mono" id="currentBet">$1.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Strategy Config -->
+            <div class="p-4 flex-1 overflow-y-auto">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Strategy Config</h2>
+                
+                <div class="space-y-4">
+                    <!-- Fund Management -->
+                    <div class="space-y-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs text-slate-300">Risk %</label>
+                            <span class="text-xs font-mono text-blue-400" id="baseBetDisplay">1.0%</span>
+                        </div>
+                        <input type="range" id="baseBetInput" min="0.1" max="10" step="0.1" value="1.0" class="w-full h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer">
+                        
+                        <div class="flex justify-between items-center mt-2">
+                            <label class="text-xs text-slate-300">Martingale</label>
+                            <span class="text-xs font-mono text-blue-400" id="martingaleDisplay">2.0x</span>
+                        </div>
+                        <input type="range" id="martingaleInput" min="1" max="5" step="0.1" value="2.0" class="w-full h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Strategy Management -->
+                    <div class="space-y-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                        <label class="text-xs text-slate-300 font-bold uppercase">Strategy File</label>
+                        
+                        <!-- Name Input -->
+                        <input type="text" id="strategyNameInput" placeholder="Strategy Name" class="w-full bg-slate-900 text-white text-xs rounded px-2 py-1.5 border border-slate-700 outline-none focus:border-blue-500 mb-1">
+                        
+                        <!-- Actions Grid -->
+                        <div class="grid grid-cols-2 gap-2">
+                             <button id="saveStrategyBtn" class="py-1.5 px-2 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded text-xs text-white font-medium transition-colors flex items-center justify-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                                Save
+                            </button>
+                            <button id="loadStrategyListBtn" class="py-1.5 px-2 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded text-xs text-white font-medium transition-colors flex items-center justify-center gap-1">
+                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                Refresh
+                            </button>
+                        </div>
+
+                        <!-- Load Dropdown -->
+                        <div class="flex gap-1 mt-1">
+                            <select id="loadStrategySelect" class="flex-1 bg-slate-900 text-white text-xs rounded px-2 py-1.5 border border-slate-700 outline-none">
+                                <option value="">-- Select Strategy --</option>
+                            </select>
+                            <button id="loadSelectedBtn" class="py-1.5 px-2 bg-blue-600 hover:bg-blue-500 rounded text-xs text-white font-medium">Load</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs (Mini) -->
+            <div class="h-1/3 border-t border-gray-700 flex flex-col bg-slate-900">
+                <div class="px-3 py-2 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">System Logs</span>
+                    <button class="text-[10px] text-slate-500 hover:text-white" onclick="document.getElementById('logs').innerHTML = ''">Clear</button>
+                </div>
+                <div id="logs" class="flex-1 overflow-y-auto p-3 space-y-1 font-mono text-[10px] leading-tight">
+                    <div class="text-slate-600 italic">System ready...</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center: Chart & Editor Split -->
+        <div class="flex-1 flex flex-col relative bg-slate-900">
+            
+            <!-- Top: Chart -->
+            <div class="h-[55%] relative flex flex-col border-b border-gray-700" id="chartSection">
+                <div class="absolute top-3 left-3 z-10">
+                    <div class="glass-panel px-3 py-1.5 rounded shadow text-sm font-semibold text-white">
+                        <span id="chartAssetLabel">EURUSD_otc</span> 
+                        <span class="text-xs font-normal text-slate-400 ml-2" id="chartTimeframeLabel">1m</span>
+                    </div>
+                    <div class="text-xl font-bold text-blue-400 mt-1 ml-1 font-mono" id="currentPrice">--.-----</div>
+                </div>
+                
+                <div id="chartContainer" class="flex-1 w-full bg-slate-900"></div>
+
+                <!-- Zoom Controls -->
+                <div class="absolute bottom-4 right-16 z-10 flex gap-2">
+                    <button onclick="chart.timeScale().fitContent()" class="p-1.5 bg-slate-800/90 hover:bg-slate-700 text-slate-300 rounded shadow border border-slate-700 transition-colors" title="Reset Zoom">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                    </button>
+                    <div class="flex flex-col gap-1">
+                        <button id="zoomInBtn" class="p-1.5 bg-slate-800/90 hover:bg-slate-700 text-slate-300 rounded shadow border border-slate-700 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        </button>
+                        <button id="zoomOutBtn" class="p-1.5 bg-slate-800/90 hover:bg-slate-700 text-slate-300 rounded shadow border border-slate-700 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom: Editor -->
+            <div class="h-[45%] flex flex-col bg-[#1e1e1e]">
+                <div class="px-3 py-1.5 bg-[#252526] border-b border-[#3e3e42] flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-medium text-slate-300">strategy.py</span>
+                        <span class="text-[10px] text-slate-500">(Python)</span>
+                    </div>
+                    <span class="text-[10px] text-slate-500">Monaco Editor</span>
+                </div>
+                <div id="editorContainer" class="flex-1"></div>
+            </div>
+        
+        </div>
+    </main>
+
+    <!-- SSID Modal -->
+    <div id="ssidModal" class="fixed inset-0 bg-slate-900/95 z-50 flex items-center justify-center hidden backdrop-blur md:backdrop-blur-sm transition-all duration-300">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 w-96 shadow-2xl relative transform transition-all scale-100">
+            <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Broker Connection
+            </h3>
+            <p id="modalDesc" class="text-xs text-slate-400 mb-4 leading-relaxed">
+                Checking connection status...
+            </p>
+            
+            <!-- Loading Bar -->
+            <div id="modalLoadingBar" class="h-1 w-full bg-slate-700/50 rounded-full overflow-hidden mb-4 hidden">
+                <div class="h-full bg-blue-500 w-full animate-progress-indeterminate"></div>
+            </div>
+
+            <!-- Input Area -->
+            <div id="modalInputArea" class="space-y-3 transition-opacity duration-300">
+                <div class="relative">
+                    <input type="password" id="modalSSIDInput" placeholder="42f6... (Your Session ID)" 
+                           class="w-full bg-slate-900 text-white text-sm rounded-lg px-4 py-3 border border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none font-mono tracking-wider placeholder-slate-600 transition-all">
+                </div>
+                
+                <button id="modalConnectBtn" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-lg text-sm font-bold text-white shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                    Connect & Verify
+                </button>
+            </div>
+            
+            <div id="modalMsg" class="h-4 mt-2 text-[10px] text-center text-slate-500 font-medium"></div>
+
+            <!-- Footer info -->
+             <div class="mt-4 pt-4 border-t border-slate-700/50 flex justify-between items-center text-[10px] text-slate-500">
+                <span>Secure Connection</span>
+                <a href="#" class="hover:text-white underline decoration-dotted" onclick="alert('1. Login to PocketOption\n2. Open DevTools (F12) -> Application -> Cookies\n3. Copy value of PHPSESSID or connect.sid (depends on region)')">Where to find?</a>
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        @keyframes progress-indeterminate {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .animate-progress-indeterminate {
+            animation: progress-indeterminate 1.5s infinite linear;
+        }
+    </style>
+
+    <script>
+        // -- Configuration --
+        const WS_URL = "ws://" + window.location.host + "/ws/live";
+
+        const START_BTN = document.getElementById('startBtn');
+        const STOP_BTN = document.getElementById('stopBtn');
+        const STATUS = document.getElementById('connectionStatus');
+        const LOGS = document.getElementById('logs');
+        
+        let ws;
+        let chart;
+        let candleSeries;
+        let editor;
+
+        // -- Monaco Editor Init --
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.30.1/min/vs' }});
+        require(['vs/editor/editor.main'], function() {
+            editor = monaco.editor.create(document.getElementById('editorContainer'), {
+                value: `class MyStrategy:\n    def next(self, candle):\n        # Available: candle['open', 'high', 'low', 'close', 'time', 'volume']\n        # Actions: return "CALL", "PUT", or None\n        \n        close = candle['close']\n        open_ = candle['open']\n        \n        # Example Strategy: Follow Candle Color\n        if close > open_:\n            return "CALL"\n        elif close < open_:\n            return "PUT"\n        \n        return None`,
+                language: 'python',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false },
+                fontSize: 12,
+                fontFamily: 'JetBrains Mono, Menlo, monospace',
+                scrollBeyondLastLine: false,
+                renderLineHighlight: 'all',
+            });
+        });
+
+        // -- Chart Init --
+        function initChart() {
+            const chartContainer = document.getElementById('chartContainer');
+            chart = LightweightCharts.createChart(chartContainer, {
+                layout: {
+                    background: { color: '#0f172a' },
+                    textColor: '#94a3b8',
+                    fontSize: 11,
+                },
+                grid: {
+                    vertLines: { color: '#1e293b' },
+                    horzLines: { color: '#1e293b' },
+                },
+                rightPriceScale: {
+                    visible: true,
+                    borderColor: '#334155',
+                    scaleMargins: { top: 0.2, bottom: 0.2 },
+                },
+                timeScale: {
+                    timeVisible: true,
+                    secondsVisible: true,
+                    borderColor: '#334155',
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                },
+                handleScale: {
+                    mouseWheel: true,
+                    pinch: true,
+                    axisPressedMouseMove: true,
+                    axisDoubleClickReset: true,
+                },
+            });
+
+            candleSeries = chart.addCandlestickSeries({
+                upColor: '#10b981',
+                downColor: '#ef4444',
+                borderVisible: false,
+                wickUpColor: '#10b981',
+                wickDownColor: '#ef4444',
+            });
+
+            // Resize Observer
+            new ResizeObserver(entries => {
+                const rect = entries[0].contentRect;
+                chart.resize(rect.width, rect.height);
+            }).observe(chartContainer);
+        }
+        initChart();
+
+        // -- Websocket logic --
+        function connect() {
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                STATUS.innerHTML = '<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 mr-2"></span> Connected';
+                STATUS.classList.replace('text-yellow-500', 'text-emerald-500');
+                STATUS.classList.replace('border-slate-700', 'border-emerald-900');
+                STATUS.classList.replace('bg-slate-800', 'bg-emerald-500/10');
+                addLog("System: Connected.", "text-emerald-500");
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleData(data);
+            };
+
+            ws.onclose = () => {
+                STATUS.innerHTML = '<span class="relative inline-flex rounded-full h-2 w-2 bg-red-500 mr-2"></span> Disconnected';
+                STATUS.classList.replace('text-emerald-500', 'text-red-500');
+                addLog("System: Disconnected. Retrying...", "text-red-500");
+                setTimeout(connect, 3000);
+            };
+
+            ws.onerror = (err) => console.error("WS Error", err);
+        }
+
+        function handleData(data) {
+            if (data.type === 'candle') {
+                candleSeries.update(data.data);
+                document.getElementById('currentPrice').innerText = data.data.close.toFixed(5);
+            }
+            else if (data.type === 'history') {
+                candleSeries.setData(data.data);
+                addLog(`System: Loaded ${data.data.length} historical candles.`, "text-blue-300");
+            }
+            else if (data.type === 'signal') {
+                const markers = candleSeries.markers() || [];
+                markers.push({
+                    time: data.data.time,
+                    position: data.data.direction === 'CALL' ? 'belowBar' : 'aboveBar',
+                    color: data.data.direction === 'CALL' ? '#10b981' : '#ef4444',
+                    shape: data.data.direction === 'CALL' ? 'arrowUp' : 'arrowDown',
+                    text: data.data.direction,
+                });
+                candleSeries.setMarkers(markers);
+                addLog(`Signal: ${data.data.direction} @ ${data.data.price}`, data.data.direction === 'CALL' ? "text-emerald-400" : "text-rose-400");
+            }
+            else if (data.type === 'log') {
+                addLog(data.message, data.color || 'text-slate-300');
+            }
+            else if (data.type === 'stats') {
+                if(data.balance) document.getElementById('balance').innerText = '$' + data.balance.toFixed(2);
+                if(data.winRate) document.getElementById('winRate').innerText = data.winRate + '%';
+                if(data.totalTrades) document.getElementById('totalTrades').innerText = data.totalTrades;
+                if(data.currentBet) document.getElementById('currentBet').innerText = '$' + data.currentBet.toFixed(2);
+            }
+        }
+
+        function addLog(msg, classes) {
+            const div = document.createElement('div');
+            div.className = classes || 'text-slate-300';
+            div.innerText = `> ${msg}`;
+            LOGS.appendChild(div);
+            LOGS.scrollTop = LOGS.scrollHeight;
+        }
+
+        // -- Controls --
+        const MODE_SELECT = document.getElementById('modeSelect');
+        const ASSET_SELECT = document.getElementById('assetSelect');
+        const TIMEFRAME_SELECT = document.getElementById('timeframeSelect');
+        const EXPIRY_SELECT = document.getElementById('expirySelect');
+        
+        // Fund Management Inputs
+        const baseBetInput = document.getElementById('baseBetInput');
+        const baseBetDisplay = document.getElementById('baseBetDisplay');
+        baseBetInput.addEventListener('input', (e) => baseBetDisplay.innerText = e.target.value + '%');
+
+        const martingaleInput = document.getElementById('martingaleInput');
+        const martingaleDisplay = document.getElementById('martingaleDisplay');
+        martingaleInput.addEventListener('input', (e) => martingaleDisplay.innerText = e.target.value + 'x');
+        
+        // Mode Change Logic (Optional: Adjust UI based on mode)
+        MODE_SELECT.addEventListener('change', () => {
+             const mode = MODE_SELECT.value;
+             // E.g. If Simulation, maybe disable Asset/Timeframe if hardcoded?
+             // For now, keep generic.
+        });
+
+        // Start / Stop Logic
+        START_BTN.addEventListener('click', () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const mode = MODE_SELECT.value;
+                const asset = ASSET_SELECT.value;
+                const timeframe = parseInt(TIMEFRAME_SELECT.value);
+                const expiry = parseInt(EXPIRY_SELECT.value);
+                const code = editor ? editor.getValue() : null;
+                const risk = parseFloat(baseBetInput.value);
+                const martingale = parseFloat(martingaleInput.value);
+
+                ws.send(JSON.stringify({
+                    command: 'start_forward_test', 
+                    mode: mode,
+                    asset: asset, 
+                    timeframe: timeframe,
+                    expiry: expiry,
+                    code: code,
+                    risk_percent: risk,
+                    martingale_multiplier: martingale
+                }));
+                
+                // Update UI Labels
+                document.getElementById('chartAssetLabel').innerText = asset + " [" + mode + "]";
+                document.getElementById('chartTimeframeLabel').innerText = TIMEFRAME_SELECT.options[TIMEFRAME_SELECT.selectedIndex].text;
+                
+                setRunningState(true);
+                
+                addLog(`Cmd: Start ${mode} ${asset} (C:${timeframe}s, E:${expiry}s)`, "text-blue-400");
+            } else {
+                addLog("System: WebSocket not ready.", "text-red-500");
+                connect();
+            }
+        });
+
+        STOP_BTN.addEventListener('click', () => {
+            ws.send(JSON.stringify({command: 'stop'}));
+            setRunningState(false);
+            addLog("Cmd: Stop Strategy", "text-yellow-400");
+        });
+        
+        function setRunningState(isRunning) {
+            if(isRunning) {
+                START_BTN.classList.add('hidden');
+                STOP_BTN.classList.remove('hidden');
+                MODE_SELECT.disabled = true;
+                ASSET_SELECT.disabled = true;
+                TIMEFRAME_SELECT.disabled = true;
+                EXPIRY_SELECT.disabled = true;
+            } else {
+                START_BTN.classList.remove('hidden');
+                STOP_BTN.classList.add('hidden');
+                MODE_SELECT.disabled = false;
+                ASSET_SELECT.disabled = false;
+                TIMEFRAME_SELECT.disabled = false;
+                EXPIRY_SELECT.disabled = false;
+            }
+        }
+        
+
+
+        // -- SSID MODAL LOGIC --
+        const ssidModal = document.getElementById('ssidModal');
+        const modalInput = document.getElementById('modalSSIDInput');
+        const modalBtn = document.getElementById('modalConnectBtn');
+        const modalMsg = document.getElementById('modalMsg');
+        const modalLoading = document.getElementById('modalLoadingBar');
+        const modalDesc = document.getElementById('modalDesc');
+        const modalInputArea = document.getElementById('modalInputArea');
+
+        // Re-config Button
+        document.getElementById('reconfigSSIDBtn').addEventListener('click', () => {
+            showInputMode("Enter new SSID to switch accounts.");
+            ssidModal.classList.remove('hidden');
+        });
+
+        // Main Init Logic
+        async function initSSID() {
+            // 1. Show Modal in Loading State
+            ssidModal.classList.remove('hidden');
+            showLoadingMode("Verifying saved session...");
+            
+            try {
+                // Check Configuration
+                const res = await fetch('/api/account/ssid');
+                const data = await res.json();
+                
+                if (data.configured) {
+                    modalDesc.innerText = "Session found. Validating balance...";
+                    // Check Balance (Validity)
+                    const balRes = await fetch('/api/account/balance');
+                     
+                     if (balRes.ok) {
+                         const balData = await balRes.json();
+                         if (balData.balance >= 0) {
+                             // Success!
+                             setModalError("Session Valid!", "text-emerald-400");
+                             updateBalance(balData.balance);
+                             setTimeout(() => {
+                                 ssidModal.classList.add('hidden');
+                                 addLog("System: Auto-login successful.", "text-emerald-400");
+                             }, 800);
+                             return;
+                         }
+                     }
+                     // If here, session expired
+                     showInputMode("Session Expired or Invalid. Please update SSID.");
+                     if(data.ssid_masked) modalInput.placeholder = "Old: " + data.ssid_masked;
+
+                } else {
+                    // Not configured
+                    showInputMode("Please configure your trading account.");
+                }
+            } catch(e) {
+                console.error("SSID Check Failed", e);
+                showInputMode("Connection Error. Please check backend.");
+            }
+        }
+
+        // Helper: Show Inputs
+        function showInputMode(msg) {
+            modalLoading.classList.add('hidden');
+            modalInputArea.classList.remove('hidden', 'opacity-50', 'pointer-events-none');
+            modalDesc.innerText = msg;
+            modalDesc.className = "text-xs text-slate-400 mb-4 leading-relaxed";
+            modalInput.disabled = false;
+            modalBtn.disabled = false;
+            modalInput.focus();
+        }
+
+        // Helper: Show Loading
+        function showLoadingMode(msg) {
+            modalLoading.classList.remove('hidden');
+            modalInputArea.classList.add('hidden'); // Hide inputs during auto-check
+            modalDesc.innerText = msg;
+            setModalError("");
+        }
+
+        // Connect Button Logic
+        modalBtn.addEventListener('click', async () => {
+             const ssid = modalInput.value.trim();
+             if(ssid.length < 10) return setModalError("Invalid SSID length");
+
+             // Switch to Loading view inside modal
+             modalLoading.classList.remove('hidden');
+             modalInputArea.classList.add('opacity-50', 'pointer-events-none'); // Dim inputs
+             modalBtn.disabled = true;
+             setModalError("Connecting & Verifying...", "text-blue-400");
+
+             try {
+                const res = await fetch('/api/account/ssid', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ ssid: ssid })
+                });
+                
+                if(!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || "Connection Failed");
+                }
+
+                const data = await res.json();
+                if(data.status === 'success') {
+                    setModalError("Success! Balance: $" + data.balance, "text-emerald-400");
+                    updateBalance(data.balance);
+                    setTimeout(() => {
+                        ssidModal.classList.add('hidden');
+                        modalInput.value = ""; // Clear
+                        showInputMode("Re-configure Account"); // Reset state for next time
+                    }, 1000);
+                } else {
+                     throw new Error(data.message);
+                }
+
+             } catch(e) {
+                 setModalError(e.message || "Failed.", "text-red-400");
+                 // Reset UI
+                 modalLoading.classList.add('hidden');
+                 modalInputArea.classList.remove('opacity-50', 'pointer-events-none');
+                 modalBtn.disabled = false;
+             }
+        });
+
+        function setModalError(msg, color="text-red-400") {
+            modalMsg.innerText = msg;
+            modalMsg.className = `h-4 mt-2 text-[10px] text-center font-medium ${color}`;
+        }
+        
+        function updateBalance(bal) {
+             document.getElementById('balance').innerText = '$' + bal.toFixed(2);
+        }
+        
+        // Run check on load
+        initSSID();
+
+        // Listen for STATE restoration
+        const originalHandleData = handleData;
+
+        handleData = function(data) {
+            if (data.type === 'state') {
+                // Restore State
+                if (data.running) {
+                    setRunningState(true);
+                    addLog("System: Re-connected to running session.", "text-emerald-300");
+                    if (data.config) {
+                        ASSET_SELECT.value = data.config.asset;
+                        TIMEFRAME_SELECT.value = data.config.timeframe;
+                        EXPIRY_SELECT.value = data.config.expiry;
+                        MODE_SELECT.value = data.config.mode;
+                        document.getElementById('chartAssetLabel').innerText = data.config.asset + " [" + data.config.mode + "]";
+                    }
+                }
+                // Pre-fill logs
+                if (data.logs && data.logs.length > 0) {
+                    data.logs.forEach(l => addLog(l.message, l.color));
+                }
+            } else {
+                originalHandleData(data);
+            }
+        };
+
+        // -- STRATEGY MANAGEMENT (Save / Load) --
+        
+        // 1. Fetch List
+        async function loadStrategies() {
+            try {
+                const res = await fetch('/api/strategy/list');
+                const strategies = await res.json();
+                const select = document.getElementById('loadStrategySelect');
+                select.innerHTML = '<option value="">-- Select Strategy --</option>';
+                strategies.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.innerText = s.name;
+                    select.appendChild(opt);
+                });
+                console.log("Strategies loaded:", strategies.length);
+            } catch(e) { console.error("Failed to load strategies", e); }
+        }
+        
+        // Initial Load
+        loadStrategies();
+        document.getElementById('loadStrategyListBtn').addEventListener('click', loadStrategies);
+
+        // 2. Load Selected Code
+        document.getElementById('loadSelectedBtn').addEventListener('click', async () => {
+             const id = document.getElementById('loadStrategySelect').value;
+             if(!id) return alert("Please select a strategy from the list.");
+             
+             try {
+                const res = await fetch(`/api/strategy/${id}`);
+                const data = await res.json();
+                if(data.code && editor) {
+                    editor.setValue(data.code);
+                    document.getElementById('strategyNameInput').value = data.name;
+                    addLog(`System: Loaded strategy "${data.name}"`, "text-emerald-400");
+                }
+             } catch(e) {
+                 alert("Failed to load strategy code.");
+             }
+        });
+
+        // 3. Save Code
+        document.getElementById('saveStrategyBtn').addEventListener('click', async () => {
+            if (!editor) return;
+            const code = editor.getValue();
+            const name = document.getElementById('strategyNameInput').value; // Get name from input
+            
+            const btn = document.getElementById('saveStrategyBtn');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '...';
+            try {
+                const res = await fetch('/api/strategy/save', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ name: name, code: code }) // Send Name
+                });
+                
+                if (!res.ok) {
+                    // Handle validation errors (e.g. 422)
+                     const errData = await res.json();
+                     console.error("Save Error:", errData);
+                     alert("Save Failed! Check console for details.");
+                     btn.innerHTML = originalText;
+                     return;
+                }
+
+                const data = await res.json();
+                if(data.success) {
+                    btn.innerHTML = '<span class="text-emerald-400">OK</span>';
+                    setTimeout(() => btn.innerHTML = originalText, 2000);
+                    // Update Name if it was untitled/generated
+                    if(data.message.includes("'")) {
+                         // Extract name from message "Strategy 'Name' created" isn't robust but API returns ID.
+                         // We basically just reload list to be safe.
+                         loadStrategies();
+                    }
+                } else {
+                    alert("Save Failed: " + data.error);
+                    btn.innerHTML = originalText;
+                }
+            } catch(e) {
+                alert("Network Error: " + e);
+                btn.innerHTML = originalText;
+            }
+        });
+
+        // Zoom Logic
+        document.getElementById('zoomInBtn').addEventListener('click', () => {
+             const timeScale = chart.timeScale();
+             const range = timeScale.getVisibleLogicalRange();
+             if (range) {
+                 const span = range.to - range.from;
+                 timeScale.setVisibleLogicalRange({ from: range.from + span * 0.1, to: range.to - span * 0.1 });
+             }
+        });
+
+        document.getElementById('zoomOutBtn').addEventListener('click', () => {
+             const timeScale = chart.timeScale();
+             const range = timeScale.getVisibleLogicalRange();
+             if (range) {
+                 const span = range.to - range.from;
+                 timeScale.setVisibleLogicalRange({ from: range.from - span * 0.1, to: range.to + span * 0.1 });
+             }
+        });
+
+        connect();
+    </script>
+</body>
+</html>
