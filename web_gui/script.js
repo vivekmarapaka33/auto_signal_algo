@@ -4,8 +4,16 @@ const ssidInput = document.getElementById('ssidInput');
 const submitBtn = document.getElementById('submitBtn');
 const resultArea = document.getElementById('resultArea');
 const errorArea = document.getElementById('errorArea');
-const balanceValue = document.getElementById('balanceValue');
+const balanceValue = document.getElementById('balance');
 const errorMessage = document.getElementById('errorMessage');
+
+// Settings Elements
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsModal = document.getElementById('settingsModal');
+const closeModal = document.querySelector('.close-modal');
+const autoSelectToggle = document.getElementById('autoSelectToggle');
+const rankedAssetsSection = document.getElementById('rankedAssetsSection');
+const rankedAssetsList = document.getElementById('rankedAssetsList');
 
 // Telegram UI Elements
 const telegramLoginBtn = document.getElementById('telegramLoginBtn');
@@ -221,6 +229,33 @@ async function updateTraderStatus() {
                  sessionToggle.checked = active;
              }
         }
+
+        // Update Auto Select Toggle
+        if (data.auto_select !== undefined && autoSelectToggle) {
+             // Only update if not currently focused to avoid jumpiness? 
+             // Or just update. If user toggles, we set it locally anyway.
+             // But if multiple tabs open, good to sync.
+             autoSelectToggle.checked = data.auto_select;
+             
+             if (data.auto_select && rankedAssetsSection) {
+                 rankedAssetsSection.classList.remove('hidden');
+                 // Update list
+                 if (data.ranked_assets && rankedAssetsList) {
+                     rankedAssetsList.innerHTML = '';
+                     data.ranked_assets.forEach((asset, idx) => {
+                         const li = document.createElement('li');
+                         li.textContent = `${idx + 1}. ${asset}`;
+                         if (asset === data.asset) li.style.fontWeight = 'bold';
+                         li.style.color = asset === data.asset ? '#4caf50' : 'inherit';
+                         rankedAssetsList.appendChild(li);
+                     });
+                 }
+             } else if (rankedAssetsSection) {
+                 rankedAssetsSection.classList.add('hidden');
+             }
+        }
+        
+        // Update Messages Table
         
         // Update Messages Table
         const tbody = document.getElementById('messageList');
@@ -238,6 +273,16 @@ async function updateTraderStatus() {
             });
             const liveDiv = document.getElementById('liveMessages');
             if (liveDiv) liveDiv.classList.remove('hidden');
+        }
+
+        // Update Balance if provided (auto-update)
+        if (data.balance !== undefined && data.balance !== null) {
+            const formatted = data.balance >= 0 ? `$${data.balance.toFixed(2)}` : `-$${Math.abs(data.balance).toFixed(2)}`;
+            if (balanceValue) {
+                balanceValue.textContent = formatted;
+                // Ensure result area is visible if we have a balance
+                if (resultArea) resultArea.classList.remove('hidden');
+            }
         }
     } catch (e) {
         console.error('Error fetching trader status', e);
@@ -532,6 +577,50 @@ async function loadMessages() {
         renderMessages(data.messages || []);
     } catch (e) {
         console.error('Error loading messages', e);
+    }
+}
+
+// (Function end was here)
+
+// Settings Modal Logic
+if (settingsBtn && settingsModal) {
+    settingsBtn.addEventListener('click', () => {
+        settingsModal.classList.remove('hidden');
+    });
+    
+    closeModal.addEventListener('click', () => {
+        settingsModal.classList.add('hidden');
+    });
+    
+    window.addEventListener('click', (e) => {
+        if (e.target == settingsModal) {
+            settingsModal.classList.add('hidden');
+        }
+    });
+    
+    // Auto Select Toggle
+    if (autoSelectToggle) {
+        autoSelectToggle.addEventListener('change', async (e) => {
+            const active = e.target.checked;
+            try {
+                const resp = await fetch('/api/trader/auto_select', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active })
+                });
+                const data = await resp.json();
+                if (!data.success) {
+                    alert('Failed to update settings: ' + data.error);
+                    e.target.checked = !active;
+                } else {
+                     if(active && rankedAssetsSection) rankedAssetsSection.classList.remove('hidden');
+                     else if(rankedAssetsSection) rankedAssetsSection.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error('Error toggling auto select', err);
+                e.target.checked = !active;
+            }
+        });
     }
 }
 

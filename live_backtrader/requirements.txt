@@ -16,3 +16,4 @@ numpy
 asyncpg
 greenlet
 sqlalchemy
+yfinance

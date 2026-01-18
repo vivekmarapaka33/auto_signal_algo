@@ -24,6 +24,37 @@
                 </div>
                 <h1>PocketOption Session Manager</h1>
                 <p class="subtitle">Connect your account and view your balance</p>
+                <div class="header-actions" style="position: absolute; right: 20px; top: 20px;">
+                    <button id="settingsBtn" class="btn-icon">⚙️</button>
+                </div>
+            </div>
+
+            <!-- Settings Modal -->
+            <div id="settingsModal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>Settings</h2>
+                        <span class="close-modal">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <span class="setting-label">Auto Asset Selection</span>
+                                <span class="setting-desc">Automatically switch assets based on Scalping Score after 4 consecutive losses.</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="autoSelectToggle">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div id="rankedAssetsSection" class="hidden" style="margin-top: 15px;">
+                            <h3>Ranked Assets</h3>
+                            <ul id="rankedAssetsList" style="max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px;">
+                                <li>Loading...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <form id="balanceForm" class="form hidden">
@@ -136,7 +167,7 @@
                 <div class="result-content">
                     <div class="balance-display">
                         <span class="balance-label">Account Balance</span>
-                        <span class="balance-value" id="balanceValue">$0.00</span>
+                        <div class="balance-value" id="balance">$0.00</div>
                     </div>
                 </div>
             </div>

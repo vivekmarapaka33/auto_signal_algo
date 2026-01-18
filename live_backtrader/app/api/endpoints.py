@@ -331,3 +331,32 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
                 pass
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket)
+
+class InstallRequest(BaseModel):
+    package_name: str
+
+@router.post("/system/install_package")
+async def install_package(req: InstallRequest):
+    import subprocess
+    import sys
+    try:
+        # Security check: Limit characters to avoid injection
+        # Allow alphanumeric, underscore, hyphen, and period
+        if not all(c.isalnum() or c in "-_." for c in req.package_name):
+             raise HTTPException(status_code=400, detail="Invalid package name")
+
+        # Use the current python executable to install
+        process = subprocess.Popen(
+            [sys.executable, "-m", "pip", "install", req.package_name],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        stdout, stderr = process.communicate()
+        
+        if process.returncode == 0:
+            return {"status": "success", "output": stdout}
+        else:
+             raise HTTPException(status_code=500, detail=f"Install failed: {stderr}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

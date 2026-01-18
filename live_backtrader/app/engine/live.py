@@ -7,6 +7,7 @@ import logging
 import collections
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+from app.core.asset_selector import get_best_forex_asset
 
 # Ensure we can find the ChipaPocketOptionData module
 # Adjust this path based on where it actually is relative to this file
@@ -156,8 +157,23 @@ class DynamicStrategy(LiveStrategyBase):
         # We expect a class "MyStrategy" with a "next" method or similar simple function
         # For simplicity, let's wrap the code in a local scope
         self.user_scope = {}
+        
+        # Inject common libraries
+        user_globals = {}
         try:
-            exec(code_str, {}, self.user_scope)
+            import numpy as np
+            user_globals['np'] = np
+            user_globals['numpy'] = np
+        except ImportError: pass
+        
+        try:
+            import pandas as pd
+            user_globals['pd'] = pd
+            user_globals['pandas'] = pd
+        except ImportError: pass
+
+        try:
+            exec(code_str, user_globals, self.user_scope)
             self.user_class = self.user_scope.get('MyStrategy')()
         except Exception as e:
             print(f"Strategy Compilation Error: {e}")
@@ -201,6 +217,51 @@ class LiveEngine:
         self.mode = "FORWARD_TEST"
         self.logs = collections.deque(maxlen=50) # Keep persistent logs
         self.config = {}
+        
+        # Auto Asset Selection
+        self.auto_select = False
+        self.ranked_assets = []
+        self.consecutive_losses = 0
+        self.current_asset_index = 0
+        self.switch_asset_flag = False
+
+    def toggle_auto_select(self, enabled: bool):
+        self.auto_select = enabled
+        self._emit_log(f"Auto Asset Selection: {'ON' if enabled else 'OFF'}", "text-purple-400")
+        if enabled and not self.ranked_assets:
+             # Initial Fetch
+             threading.Thread(target=self._refresh_assets, daemon=True).start()
+
+    def _refresh_assets(self):
+        self._emit_log("Auto Select: Ranking Assets...", "text-slate-400")
+        try:
+            assets = get_best_forex_asset()
+            if assets:
+                self.ranked_assets = assets
+                self._emit_log(f"Assets Ranked: {len(assets)} found. Top: {assets[0]}", "text-blue-300")
+                # Send to UI?
+                self._emit_data({"type": "ranked_assets", "assets": assets})
+            else:
+                self._emit_log("Auto Select: No assets found.", "text-orange-400")
+        except Exception as e:
+            self._emit_log(f"Auto Select Error: {e}", "text-red-400")
+
+    def _trigger_switch_asset(self):
+        if not self.ranked_assets:
+             self._refresh_assets()
+             return # Wait for next trigger or immediate async?
+             
+        self.current_asset_index += 1
+        if self.current_asset_index >= len(self.ranked_assets):
+             self.current_asset_index = 0
+             self._refresh_assets() # Refresh list on cycle complete
+        
+        next_asset = self.ranked_assets[self.current_asset_index]
+        self._emit_log(f"📉 4 Losses Reached. Switching to {next_asset}...", "text-yellow-400")
+        
+        # Set new asset and flag restart
+        self.asset = next_asset
+        self.switch_asset_flag = True
 
     def get_state(self):
         return {
@@ -219,7 +280,14 @@ class LiveEngine:
         self.mode = mode
         self.code = code
         self.risk_percent = risk_percent
+        self.risk_percent = risk_percent
         self.martingale_multiplier = martingale_multiplier
+        
+        # Reset Auto Select State on Start
+        self.consecutive_losses = 0
+        self.switch_asset_flag = False
+        if self.auto_select:
+             threading.Thread(target=self._refresh_assets, daemon=True).start()
         
         self.config = {
             "asset": asset,
@@ -320,88 +388,96 @@ class LiveEngine:
              future = asyncio.run_coroutine_threadsafe(_init_trader_async(), self.real_trade_loop)
              try:
                  # Wait for init
-                 future.result(timeout=15)
-                 
-                 # Override _place_trade
-                 original_place_trade = self.strategy._place_trade
-                 
-                 def forward_trade_wrapper(direction, price, time):
-                     # 1. Internal Sim
-                     t = original_place_trade(direction, price, time)
-                     
-                     # SAFETY: Do NOT execute real trades during WARMUP (History Loading)
-                     if getattr(self, 'skip_real_trades', False):
-                          return t
-
-                     # 2. Real Execution
-                     amount = self.strategy.current_bet
-                     asset_name = self.asset
-                     duration = self.expiry
-                     
-                     async def execute_real_trade():
-                         if not hasattr(self, 'trader') or not self.trader: return
-                         try:
-                             action = direction.lower()
-                             self._emit_log(f" >> PLACING REAL TRADE: {action.upper()} ${amount} ({duration}s)", "text-orange-400 font-bold")
-                             
-                             trade_result = None
-                             if action == 'call':
-                                 if hasattr(self.trader, 'call'):
-                                     trade_result = await self.trader.call(asset_name, amount, duration, check_win=False)
-                                 else:
-                                     trade_result = await self.trader.buy(asset_name, amount, duration, check_win=False)
-                             elif action == 'put':
-                                 if hasattr(self.trader, 'put'):
-                                     trade_result = await self.trader.put(asset_name, amount, duration, check_win=False)
-                                 else:
-                                     trade_result = await self.trader.sell(asset_name, amount, duration, check_win=False)
-                                 
-                             if trade_result:
-                                 # API generally returns (trade_id, info) OR just info if it failed? 
-                                 # BinaryOptionsToolsV2 usually returns (id, bool/dict)
-                                 # Let's handle tuple unpacking carefully
-                                 trade_id = None
-                                 if isinstance(trade_result, tuple):
-                                     trade_id = trade_result[0]
-                                 elif isinstance(trade_result, (str, int)):
-                                     trade_id = trade_result
-                                     
-                                 if trade_id:
-                                     self._emit_log(f" >> Trade Placed. ID: {trade_id}", "text-emerald-400")
-                                     
-                                     # Monitor
-                                     await asyncio.sleep(duration + 2)
-                                     
-                                     win_res = {'result': 'unknown'}
-                                     for _ in range(5):
-                                         try:
-                                             win_res = await self.trader.check_win(trade_id)
-                                             if win_res.get('result') in ['win', 'loss']:
-                                                  break
-                                         except: pass
-                                         await asyncio.sleep(2)
-                                     
-                                     final_status = win_res.get('result', 'unknown')
-                                     profit = win_res.get('profit', 0)
-                                     color = "text-emerald-400" if final_status == 'win' else "text-rose-400"
-                                     self._emit_log(f" >> REAL RESULT: {final_status.upper()} (${profit})", color)
-                                 else:
-                                      self._emit_log(f" >> Trade placement invalid result: {trade_result}", "text-red-400")
-                             else:
-                                 self._emit_log(" >> Trade Placement Failed (None Result)", "text-red-400")
-
-                         except Exception as e:
-                             self._emit_log(f" >> Trade Logic Error: {e}", "text-red-500")
-
-                     # Schedule on REAL TRADER loop
-                     asyncio.run_coroutine_threadsafe(execute_real_trade(), self.real_trade_loop)
-                     return t
-
-                 self.strategy._place_trade = forward_trade_wrapper
-                 self._emit_log("Real Trading Enabled & Ready.", "text-emerald-400")
-
+                 future.result(timeout=10)
              except Exception as e:
                  self._emit_log(f"Real Trader Init Timed Out/Failed: {e}", "text-red-500")
+                 # Proceed anyway, but the trader might not be ready yet.
+             
+             # Override _place_trade (ALWAYS, so we can trade when it connects later)
+             original_place_trade = self.strategy._place_trade
+             
+             def forward_trade_wrapper(direction, price, time):
+                 # 1. Internal Sim
+                 t = original_place_trade(direction, price, time)
+                 
+                 # SAFETY: Do NOT execute real trades during WARMUP (History Loading)
+                 if getattr(self, 'skip_real_trades', False):
+                      return t
+
+                 # 2. Real Execution
+                 amount = self.strategy.current_bet
+                 asset_name = self.asset
+                 duration = self.expiry
+                 
+                 async def execute_real_trade():
+                     # Check if trader is ready
+                     if not hasattr(self, 'trader') or not self.trader: 
+                         self._emit_log(" >> Real Trade Skipped: Trader not initialized.", "text-yellow-500")
+                         return
+                     
+                     try:
+                         # Ensure valid balance before trading? (Optional, maybe assume if trader object exists it's ok)
+                         # We can just try-catch the trade
+                         
+                         action = direction.lower()
+                         self._emit_log(f" >> PLACING REAL TRADE: {action.upper()} ${amount} ({duration}s)", "text-orange-400 font-bold")
+                         
+                         trade_result = None
+                         if action == 'call':
+                             if hasattr(self.trader, 'call'):
+                                 trade_result = await self.trader.call(asset_name, amount, duration, check_win=False)
+                             else:
+                                 trade_result = await self.trader.buy(asset_name, amount, duration, check_win=False)
+                         elif action == 'put':
+                             if hasattr(self.trader, 'put'):
+                                 trade_result = await self.trader.put(asset_name, amount, duration, check_win=False)
+                             else:
+                                 trade_result = await self.trader.sell(asset_name, amount, duration, check_win=False)
+                             
+                         if trade_result:
+                             # API generally returns (trade_id, info) OR just info if it failed? 
+                             # BinaryOptionsToolsV2 usually returns (id, bool/dict)
+                             # Let's handle tuple unpacking carefully
+                             trade_id = None
+                             if isinstance(trade_result, tuple):
+                                 trade_id = trade_result[0]
+                             elif isinstance(trade_result, (str, int)):
+                                 trade_id = trade_result
+                                 
+                             if trade_id:
+                                 self._emit_log(f" >> Trade Placed. ID: {trade_id}", "text-emerald-400")
+                                 
+                                 # Monitor
+                                 await asyncio.sleep(duration + 2)
+                                 
+                                 win_res = {'result': 'unknown'}
+                                 for _ in range(5):
+                                     try:
+                                         win_res = await self.trader.check_win(trade_id)
+                                         print(win_res)
+                                         if win_res.get('result') in ['win', 'loss']:
+                                              break
+                                     except: pass
+                                     await asyncio.sleep(2)
+                                 
+                                 final_status = win_res.get('result', 'unknown')
+                                 profit = win_res.get('profit', 0)
+                                 color = "text-emerald-400" if final_status == 'win' else "text-rose-400"
+                                 self._emit_log(f" >> REAL RESULT: {final_status.upper()} (${profit})", color)
+                             else:
+                                  self._emit_log(f" >> Trade placement invalid result: {trade_result}", "text-red-400")
+                         else:
+                             self._emit_log(" >> Trade Placement Failed (None Result)", "text-red-400")
+
+                     except Exception as e:
+                         self._emit_log(f" >> Trade Logic Error: {e}", "text-red-500")
+
+                 # Schedule on REAL TRADER loop
+                 asyncio.run_coroutine_threadsafe(execute_real_trade(), self.real_trade_loop)
+                 return t
+
+             self.strategy._place_trade = forward_trade_wrapper
+             self._emit_log("Real Trading Enabled (Async Hook).", "text-emerald-400")
 
         loop = asyncio.new_event_loop()
 
@@ -495,131 +571,172 @@ class LiveEngine:
                 return
 
         self._emit_log(f"Connecting to {self.asset} (1s Feed -> {self.timeframe}s Candles)...", "text-blue-400")
-
-        try:
-            # Subscribe to HIGH FREQUENCY (1s) data
-            # We will perform clientside aggregation for the strategy timeframe
-            # Logic: Rolling candle aggregation based on timestamp flooring
-            
-            with subscribe_symbol_timed(self.asset, 1, ssids=ssids) as collector:
-                self._emit_log("Data Feed Active. Aggregating candles...", "text-emerald-300")
+        
+        # OUTER LOOP for ASSET SWITCHING
+        while self.running:
+            try:
+                # Update Asset Log
+                self._emit_log(f"Feed: {self.asset}...", "text-blue-500")
                 
-                time_offset = None
-                current_candle = None
-                last_processed_ts = 0
+                # Re-fetch history for new asset?
+                if self.mode != "SIMULATION": # Avoid disrupting simulation loop
+                    try:
+                        from ChipaPocketOptionData import get_candles
+                        # Just fetch small context (e.g. 50 candles) to warm up indicators
+                        self._emit_log(f"Fetching context for {self.asset}...", "text-slate-500")
+                        history = get_candles(self.asset, self.timeframe, 300, ssids) 
+                        # ... logic to pump history into strategy ...
+                        if history and self.strategy:
+                            # Pump into strategy without trading
+                            self.skip_real_trades = True
+                            cb_backup = self.strategy.on_signal
+                            self.strategy.set_signal_callback(None)
+                            for h in history:
+                                if 'timestamp' in h: h['time'] = h['timestamp']
+                                if 'time' in h: 
+                                    self.strategy.next(h)
+                            self.strategy.set_signal_callback(cb_backup)
+                            self.skip_real_trades = False
+                    except: pass
+
+                with subscribe_symbol_timed(self.asset, 1, ssids=ssids) as collector:
+                    self._emit_log("Data Feed Active. Aggregating candles...", "text-emerald-300")
+                    
+                    time_offset = None
+                    current_candle = None
+                    last_processed_ts = 0
+                    
+                    for raw_candle in collector:
+                        if not self.running: break
+                        
+                        raw_ts = int(raw_candle['timestamp'])
+                        raw_close = raw_candle['close']
+                        raw_vol = raw_candle.get('volume') or 0 
+                        
+                        # FILTER: Strict Time Ordering
+                        # Reject duplicate or late ticks to maintain deterministic state
+                        if raw_ts <= last_processed_ts:
+                            continue
+                        last_processed_ts = raw_ts
+                        
+                        # 1. Sync Time Offset (Once)
+                        if time_offset is None:
+                            server_utc = datetime.fromtimestamp(raw_ts, tz=UTC)
+                            local_utc_now = datetime.now(tz=UTC)
+                            time_offset = (local_utc_now - server_utc).total_seconds()
+                            
+                        # 2. Determine Candle Bucket (Flooring)
+                        candle_start_time = (raw_ts // self.timeframe) * self.timeframe
+                        
+                        # 3. Handle Candle Logic
+                        
+                        # Case A: Initialize First Candle
+                        if current_candle is None:
+                            current_candle = {
+                                'time': candle_start_time,
+                                'open': raw_candle['open'],
+                                'high': raw_candle['high'],
+                                'low': raw_candle['low'],
+                                'close': raw_close,
+                                'volume': raw_vol,
+                                'timestamp': candle_start_time
+                            }
+                        
+                        # Case B: New Candle Boundary Detected
+                        elif candle_start_time != current_candle['time']:
+                            # The bucket has changed. Finalize the OLD candle.
+                            final_candle = current_candle
+                            
+                            # --- STRATEGY EXECUTION (On Close) ---
+                            completed_trades = self.strategy.update_trades(final_candle['close'], final_candle['time'])
+                            
+                            # Process Auto Switch Logic
+                            if self.auto_select and completed_trades:
+                                for t in completed_trades:
+                                    if t['result'] == 'LOSS':
+                                        self.consecutive_losses += 1
+                                        self._emit_log(f"Loss #{self.consecutive_losses}", "text-rose-500")
+                                        if self.consecutive_losses >= 4:
+                                                self._trigger_switch_asset()
+                                    elif t['result'] == 'WIN':
+                                        self.consecutive_losses = 0
+                            
+                            # Execute 'next' logic on the COMPLETED candle
+                            self.strategy.next(final_candle)
+                            
+                            # --- LOGGING & STATS ---
+                            ist_time = (datetime.fromtimestamp(final_candle['time'], tz=UTC) + timedelta(seconds=time_offset)).astimezone(IST)
+                            self._emit_log(f"Closed Candle: {final_candle['close']} @ {ist_time.strftime('%H:%M:%S')}", "text-slate-500")
+
+                            # Emit Stats (Balance, WinRate, etc.)
+                            stats = {
+                                "balance": self.strategy.balance,
+                                "winRate": 0,
+                                "totalTrades": self.strategy.wins + self.strategy.losses,
+                                "currentBet": self.strategy.current_bet
+                            }
+                            if stats['totalTrades'] > 0:
+                                stats['winRate'] = round((self.strategy.wins / stats['totalTrades']) * 100, 2)
+                            self._emit_data({"type": "stats", **stats})
+                            
+                            # --- START NEW CANDLE ---
+                            current_candle = {
+                                'time': candle_start_time,
+                                'open': raw_candle['open'], 
+                                'high': raw_candle['high'],
+                                'low': raw_candle['low'],
+                                'close': raw_close,
+                                'volume': raw_vol,
+                                'timestamp': candle_start_time
+                            }
+                            
+                        # Case C: Update Existing Candle
+                        else:
+                            current_candle['high'] = max(current_candle['high'], raw_candle['high'])
+                            current_candle['low'] = min(current_candle['low'], raw_candle['low'])
+                            current_candle['close'] = raw_close
+                            current_candle['volume'] += raw_vol
+                        
+                        # 4. Emit Real-Time Update
+                        server_utc = datetime.fromtimestamp(current_candle['time'], tz=UTC)
+                        corrected_utc = server_utc + timedelta(seconds=time_offset)
+                        time_str = corrected_utc.astimezone(IST).strftime("%Y-%m-%d %H:%M:%S")
+                        
+                        self._emit_data({
+                            "type": "candle",
+                            "data": {
+                                "time": current_candle["time"],
+                                "open": current_candle["open"],
+                                "high": current_candle["high"],
+                                "low": current_candle["low"],
+                                "close": current_candle["close"],
+                                "dateStr": time_str
+                            }
+                        })
+
+                        # Check for Switch Flag inside the loop
+                        if self.switch_asset_flag:
+                            self.switch_asset_flag = False
+                            self._emit_log(f"Switching Asset Context now...", "text-yellow-500")
+                            break # Break inner loop to restart with new asset
+
+            except Exception as e:
+                self._emit_log(f"Runtime Error: {e}", "text-red-500")
+                print(f"Error: {e}")
+                # Prevent rapid loop on error
+                import time
+                time.sleep(5)
                 
-                for raw_candle in collector:
-                    if not self.running: break
-                    
-                    raw_ts = int(raw_candle['timestamp'])
-                    raw_close = raw_candle['close']
-                    raw_vol = raw_candle.get('volume') or 0 # Handle optional volume or None
-                    
-                    # FILTER: Strict Time Ordering
-                    # Reject duplicate or late ticks to maintain deterministic state
-                    if raw_ts <= last_processed_ts:
-                        continue
-                    last_processed_ts = raw_ts
-                    
-                    # 1. Sync Time Offset (Once)
-                    if time_offset is None:
-                        server_utc = datetime.fromtimestamp(raw_ts, tz=UTC)
-                        local_utc_now = datetime.now(tz=UTC)
-                        time_offset = (local_utc_now - server_utc).total_seconds()
-                        
-                    # 2. Determine Candle Bucket (Flooring)
-                    # This aligns candles to strict boundaries (e.g. 12:00, 12:02)
-                    candle_start_time = (raw_ts // self.timeframe) * self.timeframe
-                    
-                    # 3. Handle Candle Logic
-                    
-                    # Case A: Initialize First Candle
-                    if current_candle is None:
-                        current_candle = {
-                            'time': candle_start_time,
-                            'open': raw_candle['open'],
-                            'high': raw_candle['high'],
-                            'low': raw_candle['low'],
-                            'close': raw_close,
-                            'volume': raw_vol,
-                            'timestamp': candle_start_time
-                        }
-                    
-                    # Case B: New Candle Boundary Detected
-                    elif candle_start_time != current_candle['time']:
-                        # The bucket has changed. Finalize the OLD candle.
-                        final_candle = current_candle
-                        
-                        # --- STRATEGY EXECUTION (On Close) ---
-                        self.strategy.update_trades(final_candle['close'], final_candle['time'])
-                        # Execute 'next' logic on the COMPLETED candle
-                        self.strategy.next(final_candle)
-                        
-                        # --- LOGGING & STATS ---
-                        # Log completion time (converted to local IST)
-                        ist_time = (datetime.fromtimestamp(final_candle['time'], tz=UTC) + timedelta(seconds=time_offset)).astimezone(IST)
-                        self._emit_log(f"Closed Candle: {final_candle['close']} @ {ist_time.strftime('%H:%M:%S')}", "text-slate-500")
+            finally:
+                # Check if we should really stop or just restarting
+                if not self.running:
+                    self._emit_log("Test Stopped.", "text-yellow-500")
+                    # Cleanup Trade Loop
+                    if hasattr(self, 'real_trade_loop') and self.real_trade_loop.is_running():
+                        self.real_trade_loop.call_soon_threadsafe(self.real_trade_loop.stop)
 
-                        # Emit Stats (Balance, WinRate, etc.)
-                        stats = {
-                            "balance": self.strategy.balance,
-                            "winRate": 0,
-                            "totalTrades": self.strategy.wins + self.strategy.losses,
-                            "currentBet": self.strategy.current_bet
-                        }
-                        if stats['totalTrades'] > 0:
-                            stats['winRate'] = round((self.strategy.wins / stats['totalTrades']) * 100, 2)
-                        self._emit_data({"type": "stats", **stats})
-                        
-                        # --- START NEW CANDLE ---
-                        current_candle = {
-                            'time': candle_start_time,
-                            'open': raw_candle['open'], # Open of the new period
-                            'high': raw_candle['high'],
-                            'low': raw_candle['low'],
-                            'close': raw_close,
-                            'volume': raw_vol,
-                            'timestamp': candle_start_time
-                        }
-                        
-                    # Case C: Update Existing Candle
-                    else:
-                        # Accumulate data into the current bucket
-                        current_candle['high'] = max(current_candle['high'], raw_candle['high'])
-                        current_candle['low'] = min(current_candle['low'], raw_candle['low'])
-                        current_candle['close'] = raw_close
-                        current_candle['volume'] += raw_vol
-                    
-                    # 4. Emit Real-Time Update
-                    # The frontend receives the "developing" candle every second
-                    
-                    # Prepare display string
-                    server_utc = datetime.fromtimestamp(current_candle['time'], tz=UTC)
-                    corrected_utc = server_utc + timedelta(seconds=time_offset)
-                    time_str = corrected_utc.astimezone(IST).strftime("%Y-%m-%d %H:%M:%S")
-                    
-                    self._emit_data({
-                        "type": "candle",
-                        "data": {
-                            "time": current_candle["time"],
-                            "open": current_candle["open"],
-                            "high": current_candle["high"],
-                            "low": current_candle["low"],
-                            "close": current_candle["close"],
-                            "dateStr": time_str
-                        }
-                    })
 
-        except Exception as e:
-            self._emit_log(f"Runtime Error: {e}", "text-red-500")
-            print(f"Error: {e}")
-        finally:
-            self.running = False
-            self._emit_log("Test Stopped.", "text-yellow-500")
-            
-            # Cleanup Trade Loop
-            if hasattr(self, 'real_trade_loop') and self.real_trade_loop.is_running():
-                self.real_trade_loop.call_soon_threadsafe(self.real_trade_loop.stop)
+
 
 
     def _emit_data(self, data):

@@ -4,6 +4,11 @@ import logging
 import re
 from typing import List, Optional, Tuple, Dict, Any
 from datetime import datetime, timezone, timedelta
+from asset_selector import get_best_forex_asset
+import logging
+import re
+from typing import List, Optional, Tuple, Dict, Any
+from datetime import datetime, timezone, timedelta
 
 # Configure logging
 logger = logging.getLogger("TelegramSignalTrader")
@@ -48,6 +53,12 @@ class TelegramSignalTrader:
         
         # Session Control
         self.trading_active: bool = False
+        
+        # Auto Asset Selection
+        self.auto_select_enabled: bool = False
+        self.ranked_assets: List[str] = []
+        self.consecutive_losses: int = 0
+        self.current_asset_index: int = 0
 
     def _load_assets(self) -> List[str]:
         """Loads assets.json from the current directory."""
@@ -101,8 +112,54 @@ class TelegramSignalTrader:
             'asset': self.current_asset,
             'timeframe': self.current_timeframe_sec,
             'trading_active': self.trading_active,
-            'messages': list(self.last_messages)
+            'messages': list(self.last_messages),
+            'balance': self.brokers[0].get('last_balance') if self.brokers else None,
+            'auto_select': self.auto_select_enabled,
+            'ranked_assets': self.ranked_assets
         }
+
+    async def toggle_auto_asset_selection(self, enabled: bool):
+        """Turn auto asset selection on/off."""
+        self.auto_select_enabled = enabled
+        logger.info(f"Auto Asset Selection set to: {enabled}")
+        
+        if enabled:
+            # Initial Ranking
+            await self._refresh_ranked_assets()
+
+    async def _refresh_ranked_assets(self):
+        """Runs the asset selector logic."""
+        logger.info("🔄 Running Auto Asset Selection (Ranking)...")
+        # Run in executor to avoid blocking
+        loop = asyncio.get_running_loop()
+        try:
+            new_assets = await loop.run_in_executor(None, get_best_forex_asset)
+            if new_assets:
+                self.ranked_assets = new_assets
+                self.current_asset_index = 0
+                self.current_asset = self.ranked_assets[0]
+                self.consecutive_losses = 0
+                logger.info(f"🏆 Top Asset Selected: {self.current_asset}")
+                
+                # "Get 1 hour historic data" - Fetch for the new asset to ensure data availability/logging
+                await self._fetch_history_for_asset(self.current_asset)
+            else:
+                logger.warning("⚠️ Asset Selector returned no assets. Keeping current.")
+        except Exception as e:
+            logger.error(f"Failed to refresh assets: {e}")
+
+    async def _fetch_history_for_asset(self, asset):
+        """Fetches 1h historic data as requested during switch."""
+        if not self.brokers: return
+        try:
+            # Just use first broker to fetch
+            api = self.brokers[0]['api']
+            if hasattr(api, 'get_candles'):
+                logger.info(f"📥 Fetching historic data for {asset}...")
+                candles = await api.get_candles(asset, period=60, count=60)
+                logger.info(f"   > Fetched {len(candles)} candles.")
+        except Exception as e:
+            logger.warning(f"Failed to fetch history: {e}")
 
     def set_trading_session(self, active: bool):
         """Manually set trading session status."""
@@ -147,19 +204,21 @@ class TelegramSignalTrader:
                 logger.error("❌ Could not fetch balance. Skipping.")
                 return
 
-            # Handle parsing if it returns a dict, but likely float based on tests
-            final_bal = 0.0
+            
+            # 2. Update Balance Local State
             if isinstance(balance, (int, float)):
-                final_bal = float(balance)
+                 final_bal = float(balance)
             elif isinstance(balance, str):
-                try:
-                    final_bal = float(balance)
-                except:
-                    pass
+                 try:
+                     final_bal = float(balance)
+                 except:
+                     pass
             elif isinstance(balance, dict):
                  final_bal = float(balance.get('balance', 0))
             
-            # 2. Calculate Amount
+            broker['last_balance'] = final_bal
+            
+            # 3. Calculate Amount
             if broker.get("fixed_amount"):
                 base_calc = broker["fixed_amount"]
             else:
@@ -178,6 +237,9 @@ class TelegramSignalTrader:
             if last_res == 'loss':
                 next_amount = last_amt * 2
                 logger.info(f"  > Martingale Triggered (Last: LOSS): {last_amt:.2f} -> {next_amount:.2f}")
+            elif last_res == 'tie':
+                next_amount = last_amt
+                logger.info(f"  > Tie Triggered (Last: TIE). Keeping Amount: {next_amount:.2f}")
             else:
                 next_amount = base_calc
                 if last_res == 'win':
@@ -257,6 +319,34 @@ class TelegramSignalTrader:
             import traceback
             traceback.print_exc()
 
+    async def _switch_to_next_asset(self):
+        """Switches to the next best asset in the rank list."""
+        if not self.ranked_assets:
+            await self._refresh_ranked_assets()
+            return
+
+        self.current_asset_index += 1
+        if self.current_asset_index >= len(self.ranked_assets):
+            logger.warning("⚠️ Cycled through ALL ranked assets! Re-ranking...")
+            await self._refresh_ranked_assets()
+            return
+            
+        next_asset = self.ranked_assets[self.current_asset_index]
+        self.current_asset = next_asset
+        # Reset consecutive losses for the new asset?
+        # User said "continue again with the same catch up".
+        # So we KEEP the Martingale state (don't reset broker['last_result']?) 
+        # BUT we MUST process the switch.
+        
+        # We generally reset the *loss count for comparison* so we don't switch again immediately,
+        # but we keep the *Trade Amount* logic (handled by broker['last_result']='loss').
+        self.consecutive_losses = 0 
+        
+        logger.info(f"👉 Switched to Next Best Asset: {self.current_asset}")
+        
+        # "Clear existing chart and get 1 hour data"
+        await self._fetch_history_for_asset(self.current_asset)
+
     async def _monitor_broker_result(self, broker, trade_id, duration):
         """
         Waits for trade expiry, checks win/loss, and handles catchup if needed.
@@ -274,6 +364,7 @@ class TelegramSignalTrader:
             profit = 0
             for attempt in range(5):
                 check_data = await api.check_win(trade_id)
+                print(check_data)
                 result = check_data.get('result', 'unknown')
                 profit = check_data.get('profit', 0)
                 
@@ -289,8 +380,15 @@ class TelegramSignalTrader:
             is_win = (result == 'win') or (isinstance(profit, (int, float)) and profit > 0)
             is_loss = (result == 'loss') or (isinstance(profit, (int, float)) and profit < 0)
             
+            # Detect Tie/Break-even
+            # If result is not 'win' and profit is 0 (meaning we got money back or 0 change relative to entry for some brokers)
+            # Standard PocketOption behavior: Tie = Payout 0? No, usually payout=amount. Profit=0 implies net 0.
+            # We assume profit is "net profit" (payout - amount). 
+            # If profit is 0, it's a tie (or strict break even).
+            is_tie = (not is_win and not is_loss) and (profit == 0 or result == 'tie')
+
             # Fallback
-            if not is_win and not is_loss and result == 'loss':
+            if not is_win and not is_loss and not is_tie and result == 'loss':
                 is_loss = True
 
             if is_win:
@@ -300,10 +398,35 @@ class TelegramSignalTrader:
             elif is_loss:
                 broker['last_result'] = 'loss'
                 logger.info(f"  Step Result: LOSS. Next catchup will DOUBLE amount.")
+                
+                # Track consecutive losses for Auto Selection
+                if self.auto_select_enabled:
+                    self.consecutive_losses += 1
+                    logger.info(f"  📉 Consecutive Losses: {self.consecutive_losses}/4")
+                    
+                    if self.consecutive_losses >= 4:
+                        logger.info("  ⚠️ 4 Losses Reached! Switching Asset...")
+                        await self._switch_to_next_asset()
+
+            elif is_tie:
+                broker['last_result'] = 'tie'
+                logger.info(f"  Step Result: TIE. Next catchup will REPEAT amount.")
                     
             else:
                  broker['last_result'] = 'unknown' # Tie or error
                  logger.info(f"  Step Result: {result}. State indeterminate.")
+            
+            # Update Balance After Trade Result
+            try:
+                new_bal = await api.balance()
+                logger.info(f"  > Balance Broker Update: {new_bal}")
+                if new_bal is not None:
+                    if isinstance(new_bal, (int, float)):
+                        broker['last_balance'] = float(new_bal)
+                    elif isinstance(new_bal, dict):
+                        broker['last_balance'] = float(new_bal.get('balance', 0))
+            except Exception as e:
+                logger.error(f"Failed to fetch balance after trade: {e}")
 
         except Exception as e:
             logger.error(f"Error checking trade result: {e}")
@@ -427,8 +550,12 @@ class TelegramSignalTrader:
             if("OTC" in text):
                 text = text.replace("OTC", "otc")
                 
-            self.current_asset = text.replace(" ", "_").replace("/", "")
-            logger.info(f"Updated asset to {self.current_asset}")
+            # If Auto Select is Enabled, DO NOT update asset from message
+            if self.auto_select_enabled:
+                logger.info(f"🔒 Auto Select Enabled: Ignoring asset change to {text}. Keeping {self.current_asset}")
+            else:
+                self.current_asset = text.replace(" ", "_").replace("/", "")
+                logger.info(f"Updated asset to {self.current_asset}")
             return
 
         # 8. Try Parse Normal Direction

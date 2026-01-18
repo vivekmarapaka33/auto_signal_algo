@@ -117,6 +117,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 risk = message.get("risk_percent", 1.0)
                 martingale = message.get("martingale_multiplier", 2.0)
                 engine.start(asset=asset, timeframe=timeframe, expiry=expiry, mode=mode, code=code, risk_percent=risk, martingale_multiplier=martingale)
+            elif message.get("command") == "toggle_auto_select":
+                enabled = message.get("enabled", False)
+                engine.toggle_auto_select(enabled)
                 
     except WebSocketDisconnect:
         manager.disconnect(websocket)

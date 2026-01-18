@@ -325,6 +325,20 @@ def trader_session():
     trader.set_trading_session(bool(active))
     return jsonify({'success': True, 'trading_active': trader.trading_active})
 
+@app.route('/api/trader/auto_select', methods=['POST'])
+def trader_auto_select():
+    """Toggle auto asset selection."""
+    data = request.get_json()
+    active = data.get('active')
+    if active is None:
+        return jsonify({'success': False, 'error': 'Missing active status'}), 400
+        
+    asyncio.run_coroutine_threadsafe(
+        trader.toggle_auto_asset_selection(bool(active)), 
+        telegram_handler.loop
+    )
+    return jsonify({'success': True})
+
 # SSID management helpers
 SSID_FILE = os.path.join(BASE_DIR, 'ssids.json')
 
