@@ -1,1 +1,1 @@
-42["auth",{"session":"di4bbrnrf9jac1vtn3ejifiaf4","isDemo":1,"uid":118330943,"platform":2,"isFastHistory":true,"isOptimized":true}]
+42["auth",{"session":"a:4:{s:10:\"session_id\";s:32:\"a29ef7d33db5d9ff0010cd287a648bea\";s:10:\"ip_address\";s:15:\"106.216.197.176\";s:10:\"user_agent\";s:120:\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.\";s:13:\"last_activity\";i:1768815525;}1d3d6a9a2aa5cffa0dc6138ddfb86bd1","isDemo":0,"uid":115859930,"platform":2,"isFastHistory":true,"isOptimized":true}]

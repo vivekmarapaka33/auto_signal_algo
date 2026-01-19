@@ -101,26 +101,34 @@ class LiveStrategyBase:
             
             # Expiry Check
             if current_time >= trade['expiry_time']:
-                is_win = False
-                if trade['direction'] == 'CALL' and current_price > trade['entry_price']:
-                    is_win = True
-                elif trade['direction'] == 'PUT' and current_price < trade['entry_price']:
-                    is_win = True
+                result = 'LOSS'
+                if trade['direction'] == 'CALL':
+                    if current_price > trade['entry_price']:
+                        result = 'WIN'
+                    elif current_price == trade['entry_price']:
+                        result = 'DRAW'
+                elif trade['direction'] == 'PUT':
+                    if current_price < trade['entry_price']:
+                         result = 'WIN'
+                    elif current_price == trade['entry_price']:
+                         result = 'DRAW'
                 
                 profit = 0
-                if is_win:
+                if result == 'WIN':
                     profit = trade['amount'] * 0.92 # 92% Payout
                     self.balance += profit
                     self.wins += 1
                     self.on_win(trade)
-                else:
+                elif result == 'LOSS':
                     self.balance -= trade['amount']
                     self.losses += 1
                     self.on_loss(trade)
+                elif result == 'DRAW':
+                    self.on_draw(trade)
                 
                 trade['active'] = False
-                trade['result'] = 'WIN' if is_win else 'LOSS'
-                trade['profit'] = profit if is_win else -trade['amount']
+                trade['result'] = result
+                trade['profit'] = profit if result == 'WIN' else (-trade['amount'] if result == 'LOSS' else 0)
                 trade['exit_price'] = current_price
                 completed.append(trade)
         return completed
@@ -133,8 +141,15 @@ class LiveStrategyBase:
         # Default Martingale Logic: Catchup
         self.current_bet *= self.martingale_factor
 
+    def on_draw(self, trade):
+        # Default Martingale Logic: No Change
+        pass
+
 class MyLiveStrategy(LiveStrategyBase):
     def next(self, candle):
+        if any(t['active'] for t in self.trades):
+            return
+
         # Default strategy logic: Simple random 50/50 for testing
         # Or simple strategy: Buy if close > open (Green), Sell if close < open (Red)
         if candle['close'] > candle['open']:
@@ -180,6 +195,10 @@ class DynamicStrategy(LiveStrategyBase):
             self.user_class = None
 
     def next(self, candle):
+        # Mandatory: Wait for previous trade result
+        if any(t['active'] for t in self.trades):
+            return
+
         if not self.user_class: return
         
         try:

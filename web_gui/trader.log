@@ -1,14 +1,3 @@
-2026-01-11 23:42:56,461 - TelegramSignalTrader - INFO - Added broker for SSID 42["auth",... with 1.0% trade size
-2026-01-11 23:43:55,468 - TelegramSignalTrader - INFO - Added broker for SSID 42["auth",... with 1.0% trade size
-2026-01-11 23:45:30,818 - TelegramSignalTrader - INFO - Added broker for SSID 42["auth",... with 1.0% trade size
-2026-01-11 23:45:58,101 - TelegramSignalTrader - INFO - Received message: Hi
-2026-01-11 23:45:58,103 - TelegramSignalTrader - INFO - Message ignored (no matching instruction)
-2026-01-11 23:46:05,232 - TelegramSignalTrader - INFO - Received message: ⚙️ Settings for opening trades
-
-🏷 Time we choose 1:00 minute
-🏷 The amount of money per trade - use 1-5% of your deposit, so you can use catch-up system
-2026-01-11 23:46:05,233 - TelegramSignalTrader - INFO - 🟢 TRADING SESSION STARTED via Settings Message
-2026-01-11 23:46:05,233 - TelegramSignalTrader - INFO -    > Initial Timeframe set to 60s from settings
-2026-01-11 23:46:05,234 - TelegramSignalTrader - INFO - Updated timeframe to 60 seconds
-2026-01-11 23:46:24,477 - TelegramSignalTrader - INFO - Received message: 🤩Balance after trading🤩
-2026-01-11 23:46:24,478 - TelegramSignalTrader - INFO - 🔴 TRADING SESSION ENDED via Balance Message
+2026-01-19 15:29:41,301 - TelegramSignalTrader - INFO - Added broker for SSID 42["auth",... with 1.0% trade size
+2026-01-19 15:30:52,833 - TelegramSignalTrader - INFO - Added broker for SSID 42["auth",... with 1.0% trade size
+2026-01-19 15:31:39,693 - TelegramSignalTrader - INFO - Added broker for SSID 42["auth",... with 1.0% trade size

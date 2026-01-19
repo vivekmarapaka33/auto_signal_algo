@@ -1,23 +1,23 @@
 [
   {
     "name": "surya_1",
-    "ssid": "42[\"auth\",{\"session\":\"a:4:{s:10:\\\"session_id\\\";s:32:\\\"3c96404c24161683694bb5e00a9cee42\\\";s:10:\\\"ip_address\\\";s:13:\\\"106.192.0.192\\\";s:10:\\\"user_agent\\\";s:111:\\\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36\\\";s:13:\\\"last_activity\\\";i:1767674539;}7e1f7ddfbf7ee42cbe781f4425d6eb05\",\"isDemo\":0,\"uid\":115859930,\"platform\":2,\"isFastHistory\":true,\"isOptimized\":true}]",
+    "ssid": "42[\"auth\",{\"session\":\"a:4:{s:10:\\\"session_id\\\";s:32:\\\"a29ef7d33db5d9ff0010cd287a648bea\\\";s:10:\\\"ip_address\\\";s:15:\\\"106.216.197.176\\\";s:10:\\\"user_agent\\\";s:120:\\\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.\\\";s:13:\\\"last_activity\\\";i:1768815525;}1d3d6a9a2aa5cffa0dc6138ddfb86bd1\",\"isDemo\":0,\"uid\":115859930,\"platform\":2,\"isFastHistory\":true,\"isOptimized\":true}]",
     "percentage": 1,
     "fixed_amount": null,
-    "last_balance": 674.58
+    "last_balance": 944.93
   },
   {
     "name": "vivek_1",
-    "ssid": "42[\"auth\",{\"session\":\"a:4:{s:10:\\\"session_id\\\";s:32:\\\"4549d40746748f7c60c0f3e2b8923154\\\";s:10:\\\"ip_address\\\";s:13:\\\"49.37.149.123\\\";s:10:\\\"user_agent\\\";s:111:\\\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36\\\";s:13:\\\"last_activity\\\";i:1768154441;}ab5319379cc3d7177dcb19bb53663c0e\",\"isDemo\":0,\"uid\":57683757,\"platform\":2,\"isFastHistory\":true,\"isOptimized\":true}]",
+    "ssid": "42[\"auth\",{\"session\":\"a:4:{s:10:\\\"session_id\\\";s:32:\\\"7278ab3aba1917c3badcfa691a25b256\\\";s:10:\\\"ip_address\\\";s:14:\\\"106.215.171.56\\\";s:10:\\\"user_agent\\\";s:111:\\\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36\\\";s:13:\\\"last_activity\\\";i:1768812667;}aa69d92f429c9265d44703fc95efb410\",\"isDemo\":0,\"uid\":57683757,\"platform\":2,\"isFastHistory\":true,\"isOptimized\":true}]",
     "percentage": 1,
     "fixed_amount": null,
-    "last_balance": 208.63
+    "last_balance": 199.62
   },
   {
     "name": "prashanth_1",
-    "ssid": "42[\"auth\",{\"session\":\"a:4:{s:10:\\\"session_id\\\";s:32:\\\"b9caa5260600ee98890620cbf99c8511\\\";s:10:\\\"ip_address\\\";s:13:\\\"49.37.149.123\\\";s:10:\\\"user_agent\\\";s:111:\\\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36\\\";s:13:\\\"last_activity\\\";i:1768155253;}89d900337cddce369fb0dc1b6f042d59\",\"isDemo\":0,\"uid\":120762415,\"platform\":2,\"isFastHistory\":true,\"isOptimized\":true}]",
+    "ssid": "42[\"auth\",{\"session\":\"a:4:{s:10:\\\"session_id\\\";s:32:\\\"5b59d49812ea7e54c4d1262ba797a1ea\\\";s:10:\\\"ip_address\\\";s:14:\\\"106.215.171.56\\\";s:10:\\\"user_agent\\\";s:111:\\\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36\\\";s:13:\\\"last_activity\\\";i:1768812765;}bb1f1935f83e079b7047e3f62aaa5745\",\"isDemo\":0,\"uid\":120762415,\"platform\":2,\"isFastHistory\":true,\"isOptimized\":true}]",
     "percentage": 1,
     "fixed_amount": null,
-    "last_balance": 200.0
+    "last_balance": 294.38
   }
 ]
